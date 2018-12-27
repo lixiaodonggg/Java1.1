@@ -21,6 +21,7 @@ import javax.swing.*;
 
 //mp3,wma,ape,wav,midi
 public class Utils {
+    /**获取所有的音乐路径*/
     public static void findAll(List list, String path, Map<String, String> map) {
         File dir = new File(path);
         File[] files = dir.listFiles();
@@ -42,6 +43,7 @@ public class Utils {
         }
     }
 
+    /**获取路径*/
     public static String open() {
         final JFileChooser fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -72,7 +74,7 @@ public class Utils {
         }
     }
 
-
+    /**加载音乐路径*/
     public static java.util.List<String> load() {
 
         File file = new File("musicPath.txt");
@@ -119,10 +121,10 @@ public class Utils {
     }
 
     public static String secToTime(int time) {
-        String timeStr = null;
-        int hour = 0;
-        int minute = 0;
-        int second = 0;
+        String timeStr;
+        int hour;
+        int minute;
+        int second;
         if (time <= 0) {
             return "00:00";
         } else {
@@ -144,7 +146,7 @@ public class Utils {
     }
 
     public static String unitFormat(int i) {
-        String retStr = null;
+        String retStr;
         if (i >= 0 && i < 10) {
             retStr = "0" + Integer.toString(i);
         } else {
