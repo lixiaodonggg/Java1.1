@@ -281,10 +281,10 @@ public class MusicPlayer implements ActionListener {
         ((ScheduledExecutorService) serviceLRC).scheduleAtFixedRate(() -> {
             if (!player.isComplete()) {
                 String time1 = Utils.secToTime(player.getPosition() / 1000 + 2);
-                if (time1.equals(lrcshow)) {
+        /*        if (time1.equals(lrcshow)) {
                     return;
-                }
-                String lrc = lrcMap.get(time1);
+                }*/
+                String lrc = lrcMap.remove(time1);
                 if (lrc != null) {
                     System.out.println(lrc);
                     textArea.append("  ");
