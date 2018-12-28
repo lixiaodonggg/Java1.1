@@ -24,52 +24,50 @@ import javax.swing.*;
 
 public class MusicPlayer implements ActionListener {
 
-    JFrame frame = new JFrame("音乐");
-    String Location = "";
+    private JFrame frame = new JFrame("音乐");
+    private String Location;
     //按钮
-    JButton input = new JButton("导入");
-    JLabel song = new JLabel("曲名");
-    JButton play = new JButton("播放");
-    JButton stop = new JButton("停止");
-    JButton next = new JButton("下一首");
-    JButton previous = new JButton("上一首");
+    private JButton input = new JButton("导入");
+    private JLabel song = new JLabel("曲名");
+    private JButton play = new JButton("播放");
+    private JButton stop = new JButton("停止");
+    private JButton next = new JButton("下一首");
+    private JButton previous = new JButton("上一首");
     //面板
-    JPanel buttonPanel = new JPanel(); //按钮面板
-    JPanel listPanel = new JPanel(); //列表面板
-    JPanel sliderPanel = new JPanel();//进度条面板
-    JPanel textPanel = new JPanel();//歌词面板
-    String[] modeName = {"顺序播放", "单曲循环", "随机播放"};
-    JComboBox modeBox = new JComboBox(modeName);
+    private JPanel buttonPanel = new JPanel(); //按钮面板
+    private JPanel listPanel = new JPanel(); //列表面板
+    private JPanel sliderPanel = new JPanel();//进度条面板
+    private JPanel textPanel = new JPanel();//歌词面板
+    private String[] modeName = {"顺序播放", "单曲循环", "随机播放"};
+    private JComboBox modeBox = new JComboBox(modeName);
     //进度条
-    JSlider slider = new JSlider();
-    JLabel leftLabel = new JLabel(Utils.secToTime(0));
-    JLabel rightLabel = new JLabel(Utils.secToTime(0));
-    List list = new List(10);  //列表
+    private JSlider slider = new JSlider();
+    private JLabel leftLabel = new JLabel(Utils.secToTime(0));
+    private JLabel rightLabel = new JLabel(Utils.secToTime(0));
+    private List list = new List(10);  //列表
     //文字域
-    JTextArea textArea = new JTextArea(10, 20);
-    Player player; //播放
-    Thread thread; //播放线程
-    Thread time; //时间线程
-    int index;//当前播放的音乐索引
-    int nextIndex;//下一首音乐索引
-    String musicName; //当前播放的乐曲名称
-    String nextMusicName;//下一曲
+    private JTextArea textArea = new JTextArea(10, 20);
+    private Player player; //播放
+    private Thread thread; //播放线程
+    private Thread time; //时间线程
+    private int index;//当前播放的音乐索引
+    private int nextIndex;//下一首音乐索引
+    private String musicName; //当前播放的乐曲名称
+    private String nextMusicName;//下一曲
 
     Map<String, String> songPathMap = new HashMap<>(); //歌曲名称和路径的键值对
-    Map<String, String> lrcPathMap = new HashMap<>(); //歌曲名称和路径的键值对
-    boolean changed = false; //列表是否改变
+    private Map<String, String> lrcPathMap = new HashMap<>(); //歌曲名称和路径的键值对
+    private boolean changed = false; //列表是否改变
     private java.util.List<String> saveList; //路径保存的列表
     private int totalTime; //当前歌曲总时间
-    int start = 0; //进度条初始值
-    int end = 100;//进度条最大值
-    ExecutorService serviceLRC;
-    Map<String, String> lrcMap;
-    volatile String lrcshow;
-    JScrollPane scrollPane = new JScrollPane(
-            textArea,
-            ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
-    );
+    private int start = 0; //进度条初始值
+    private int end = 100;//进度条最大值
+    private ExecutorService serviceLRC;
+    private Map<String, String> lrcMap;
+    private volatile String lrcshow;
+    private JScrollPane scrollPane =
+            new JScrollPane(textArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+                    ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
     public MusicPlayer() {
         init();//窗口
@@ -228,7 +226,6 @@ public class MusicPlayer implements ActionListener {
         if (player != null) {
             player.close();
             textArea.setText("");
-            serviceLRC.shutdown();
         }
         if (lrcMap != null) {
             lrcMap.clear();
@@ -242,9 +239,7 @@ public class MusicPlayer implements ActionListener {
                 lrcMap = Utils.readLRC(path);
                 textArea.append(Utils.getHeader(lrcMap));
             }
-        } catch (JavaLayerException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
+        } catch (JavaLayerException | FileNotFoundException e) {
             e.printStackTrace();
         } finally {
             play();
@@ -282,48 +277,53 @@ public class MusicPlayer implements ActionListener {
         if (lrcMap == null) {
             return;
         }
-
         serviceLRC = Executors.newSingleThreadScheduledExecutor();
-
-        ((ScheduledExecutorService) serviceLRC)
-                .scheduleAtFixedRate((Runnable) () -> {
-                    if (!player.isComplete()) {
-                        String time1 = Utils.secToTime(player.getPosition() / 1000 + 2);
-                        if (time1.equals(lrcshow)) {
-                            return;
-                        }
-                        String lrc = lrcMap.get(time1);
-                        if (lrc != null) {
-                            System.out.println(lrc);
-                            textArea.append("  ");
-                            textArea.append(lrc);
-                            textArea.append("\n");
-                            lrcshow = time1;
-                            JScrollBar jscrollBar = scrollPane.getVerticalScrollBar();
-                            if (jscrollBar != null)
-                                jscrollBar.setValue(jscrollBar.getMaximum());
-                        }
+        ((ScheduledExecutorService) serviceLRC).scheduleAtFixedRate(() -> {
+            if (!player.isComplete()) {
+                String time1 = Utils.secToTime(player.getPosition() / 1000 + 2);
+                if (time1.equals(lrcshow)) {
+                    return;
+                }
+                String lrc = lrcMap.get(time1);
+                if (lrc != null) {
+                    System.out.println(lrc);
+                    textArea.append("  ");
+                    textArea.append(lrc);
+                    textArea.append("\n");
+                    lrcshow = time1;
+                    JScrollBar jscrollBar = scrollPane.getVerticalScrollBar();
+                    if (jscrollBar != null) {
+                        jscrollBar.setValue(jscrollBar.getMaximum());
                     }
-                }, 0, 1000, TimeUnit.MILLISECONDS);
+                }
+            }
+        }, 0, 1000, TimeUnit.MILLISECONDS);
+
     }
 
     public void next() {
+        thread.stop();
+        time.stop();
         if (index < list.getItemCount() - 1) {
-            thread.stop();
-            time.stop();
             index += 1;
-            playFile(list.getItem(index));
+        } else {
+            index = 0;
         }
+        playFile(list.getItem(index));
     }
 
     public void previous() {
+        thread.stop();
+        time.stop();
         if (index > 0) {
-            thread.stop();
-            time.stop();
             index -= 1;
-            playFile(list.getItem(index));
+        } else {
+            index = list.getItemCount() - 1;
+
         }
+        playFile(list.getItem(index));
     }
+
 /*    JPanel leftPanel = new JPanel();
     JPanel centerPanel = new JPanel();
     JPanel rightPanel = new JPanel();
@@ -378,6 +378,5 @@ public class MusicPlayer implements ActionListener {
         frame.setVisible(true);
 
     }*/
-
 
 }
