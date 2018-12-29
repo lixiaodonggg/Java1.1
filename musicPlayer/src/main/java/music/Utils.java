@@ -17,7 +17,8 @@ import javax.swing.*;
 
 //mp3,wma,ape,wav,midi
 public class Utils {
-    public static void findAll(List list, String path, Map<String, String> songMap, Map<String, String> lrcMap) {
+    public static void findAll(List list, String path, Map<String, String> songMap,
+            Map<String, String> lrcMap) {
         File dir = new File(path);
         File[] files = dir.listFiles();
         if (files != null) {
@@ -178,6 +179,9 @@ public class Utils {
                         String time = s1[0].replace("[", "");
                         String[] s2 = s1[1].split("]");
                         String lrc = s2.length > 1 ? s2[1] : "";
+                        if (lrc.isEmpty()) {
+                            continue;
+                        }
                         map.put(time, lrc);
                     }
                 }

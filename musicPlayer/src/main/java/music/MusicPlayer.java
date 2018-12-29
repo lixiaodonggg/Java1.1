@@ -25,7 +25,7 @@ import javax.swing.*;
 public class MusicPlayer implements ActionListener {
 
     private JFrame frame = new JFrame("音乐");
-    private String Location;
+    private String LOCATION;
     //按钮
     private JButton input = new JButton("导入");
     private JLabel song = new JLabel("曲名");
@@ -60,8 +60,6 @@ public class MusicPlayer implements ActionListener {
     private boolean changed = false; //列表是否改变
     private java.util.List<String> saveList; //路径保存的列表
     private int totalTime; //当前歌曲总时间
-    private int start = 0; //进度条初始值
-    private int end = 100;//进度条最大值
     private ExecutorService serviceLRC;
     private Map<String, String> lrcMap;
     private volatile String lrcshow;
@@ -70,7 +68,7 @@ public class MusicPlayer implements ActionListener {
                     ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
     public MusicPlayer() {
-        init();//窗口
+        init();//初始化
         listener();//监听
     }
 
@@ -116,11 +114,6 @@ public class MusicPlayer implements ActionListener {
                 randomPlay();
             }
         }
-        //存储线程开启
-        ExecutorService service = Executors.newSingleThreadScheduledExecutor();
-        ((ScheduledExecutorService) service)
-                .scheduleAtFixedRate(this::saveSong, 10, 10, TimeUnit.SECONDS);
-
         frame.setVisible(true);
     }
 
@@ -156,38 +149,45 @@ public class MusicPlayer implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         String cmd = e.getActionCommand();
-        if (cmd.equals("停止")) {
-            stop();
-        }
-        if (cmd.equals("播放")) {
-            if (thread == null) {
+        switch (cmd) {
+            case "停止":
+                stop();
                 return;
-            }
-            thread.resume();
-            time.resume();
-            play.setText("暂停");
-        } else if (cmd.equals("暂停")) {
-            pause();
-        } else if (cmd.equals("下一首")) {
-            if (thread == null || list.getItemCount() == 0) {
-                return;
-            }
-            next();
-        } else if (cmd.equals("上一首")) {
-            if (thread == null || list.getItemCount() == 0) {
-                return;
-            }
-            previous();
-        } else if (cmd.equals("导入")) {
-            Location = Utils.open();
-            if (Location == null) {
-                return;
-            }
-            if (!saveList.contains(Location)) {
-                saveList.add(Location);
-            }
-            Utils.findAll(list, Location, songPathMap, lrcPathMap);
-            changed = true;
+            case "播放":
+                if (thread == null) {
+                    return;
+                }
+                thread.resume();
+                time.resume();
+                play.setText("暂停");
+                break;
+            case "暂停":
+                pause();
+                break;
+            case "下一首":
+                if (thread == null || list.getItemCount() == 0) {
+                    return;
+                }
+                next();
+                break;
+            case "上一首":
+                if (thread == null || list.getItemCount() == 0) {
+                    return;
+                }
+                previous();
+                break;
+            case "导入":
+                LOCATION = Utils.open();
+                if (LOCATION == null) {
+                    return;
+                }
+                if (!saveList.contains(LOCATION)) {
+                    saveList.add(LOCATION);
+                }
+                Utils.findAll(list, LOCATION, songPathMap, lrcPathMap);
+                saveSong();
+                changed = true;
+                break;
         }
     }
 
@@ -201,7 +201,7 @@ public class MusicPlayer implements ActionListener {
     }
 
     private void stop() {
-        if (thread == null && player == null) {
+        if (thread == null || player == null) {
             return;
         }
         thread.stop();
@@ -261,8 +261,10 @@ public class MusicPlayer implements ActionListener {
             }
         });
         thread.start();
-        start = 0;
-        end = totalTime;
+        //进度条初始值
+        int start = 0;
+        //进度条最大值
+        int end = totalTime;
         slider.setMinimum(start);
         slider.setMaximum(end);
 
@@ -280,14 +282,14 @@ public class MusicPlayer implements ActionListener {
         serviceLRC = Executors.newSingleThreadScheduledExecutor();
         ((ScheduledExecutorService) serviceLRC).scheduleAtFixedRate(() -> {
             if (!player.isComplete()) {
-                String time1 = Utils.secToTime(player.getPosition() / 1000 + 2);
-        /*        if (time1.equals(lrcshow)) {
+                String time1 = Utils.secToTime(player.getPosition() / 1000 + 1);
+                if (time1.equals(lrcshow)) {
                     return;
-                }*/
+                }
                 String lrc = lrcMap.remove(time1);
                 if (lrc != null) {
                     System.out.println(lrc);
-                    textArea.append("  ");
+                    textArea.append("   ");
                     textArea.append(lrc);
                     textArea.append("\n");
                     lrcshow = time1;
@@ -323,60 +325,4 @@ public class MusicPlayer implements ActionListener {
         }
         playFile(list.getItem(index));
     }
-
-/*    JPanel leftPanel = new JPanel();
-    JPanel centerPanel = new JPanel();
-    JPanel rightPanel = new JPanel();
-    JPanel listPanel = new JPanel();
-    JPanel sliderPanel = new JPanel();
-    JPanel buttonPanel = new JPanel();
-    JPanel titlePanel = new JPanel();*/
-
-    /*public void newFrame() {
-
-        frame.add(leftPanel);
-        frame.add(centerPanel);
-        frame.add(rightPanel);
-        frame.setLayout(null);
-        frame.setBounds(100, 50, 1100, 700);
-
-*//*        leftPanel.setBounds(100, 50, 250, 700);
-        leftLabel.setLayout(null);*//*
-
-        centerPanel.setBounds(250, 50, 650, 700);
-        centerPanel.setLayout(null);
-        centerPanel.add(listPanel);
-        centerPanel.add(sliderPanel);
-        centerPanel.add(buttonPanel);
-
-        rightPanel.setBounds(650, 50, 1100, 700);
-        rightPanel.add(titlePanel);
-        rightPanel.add(lrcPanel);
-        rightPanel.setLayout(null);
-
-        listPanel.setBounds(250, 50, 650, 500);
-        listPanel.setLayout(null);
-        sliderPanel.setBounds(250, 500, 650, 700);
-        sliderPanel.setLayout(null);
-        buttonPanel.setBounds(250, 600, 650, 700);
-        buttonPanel.setLayout(null);
-        titlePanel.setBounds(650, 50, 1100, 150);
-        lrcPanel.setBounds(650, 150, 1100, 700);
-        list.setBounds(250, 50, 650, 500);
-        listPanel.add(list);
-        sliderPanel.add(leftLabel);
-        sliderPanel.add(slider);
-        sliderPanel.add(rightLabel);
-        buttonPanel.add(previous);
-        buttonPanel.add(play);
-        buttonPanel.add(next);
-        buttonPanel.add(stop);
-        buttonPanel.add(input);
-        buttonPanel.add(modeBox);
-        lrcPanel.add(scrollPane);
-        textArea.setBounds(650, 150, 1100, 700);
-        frame.setVisible(true);
-
-    }*/
-
 }
