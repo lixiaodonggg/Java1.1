@@ -88,7 +88,7 @@ public class MusicPlayer implements ActionListener {
         sliderPanel.add(slider, BorderLayout.CENTER);
         sliderPanel.add(rightLabel, BorderLayout.EAST);
         sliderPanel.add(song, BorderLayout.SOUTH);
-
+        textArea.setForeground(Color.BLUE);
         buttonPanel.setLayout(new GridLayout(2, 2));
         buttonPanel.add(previous);
         buttonPanel.add(play);
@@ -105,16 +105,20 @@ public class MusicPlayer implements ActionListener {
         play.addActionListener(this);
         stop.addActionListener(this);
         textArea.setFont(new Font(null, Font.PLAIN, 18));   // 设置字体
+        loadSong();
+        frame.setVisible(true);
+    }
+
+    private void loadSong() {
         if (list.getItemCount() == 0) {  //加载文件
             saveList = Utils.load();
             if (saveList != null) {
-                for (String s : saveList) {
-                    Utils.findAll(list, s, songPathMap, lrcPathMap);
+                for (String savePath : saveList) {
+                    new Thread(() -> Utils.findAll(list, savePath, songPathMap, lrcPathMap))
+                            .start();
                 }
-                randomPlay();
             }
         }
-        frame.setVisible(true);
     }
 
     public void listener() {
@@ -185,8 +189,8 @@ public class MusicPlayer implements ActionListener {
                     saveList.add(LOCATION);
                 }
                 Utils.findAll(list, LOCATION, songPathMap, lrcPathMap);
-                saveSong();
                 changed = true;
+                saveSong();
                 break;
         }
     }
@@ -234,7 +238,7 @@ public class MusicPlayer implements ActionListener {
             player = new Player(new FileInputStream(songPathMap.get(musicName)));
             totalTime = Utils.getMp3Time(songPathMap.get(musicName));
             this.musicName = musicName;
-            String path = lrcPathMap.get(Utils.getLrcName(musicName));
+            String path = lrcPathMap.get(Utils.replaceSuffix(musicName, ".lrc"));
             if (path != null) {
                 lrcMap = Utils.readLRC(path);
                 textArea.append(Utils.getHeader(lrcMap));
@@ -258,6 +262,8 @@ public class MusicPlayer implements ActionListener {
                 }
             } catch (JavaLayerException e) {
                 e.printStackTrace();
+            } finally {
+                next();
             }
         });
         thread.start();
@@ -321,7 +327,6 @@ public class MusicPlayer implements ActionListener {
             index -= 1;
         } else {
             index = list.getItemCount() - 1;
-
         }
         playFile(list.getItem(index));
     }

@@ -17,7 +17,7 @@ import javax.swing.*;
 
 //mp3,wma,ape,wav,midi
 public class Utils {
-    public static void findAll(List list, String path, Map<String, String> songMap,
+    public static void findAll(java.awt.List list, String path, Map<String, String> songMap,
             Map<String, String> lrcMap) {
         File dir = new File(path);
         File[] files = dir.listFiles();
@@ -200,9 +200,9 @@ public class Utils {
         return map;
     }
 
-    public static String getLrcName(String str) {
+    public static String replaceSuffix(String str, String suffix) {
         String s = str.substring(0, str.indexOf("."));
-        return s + ".lrc";
+        return s + suffix;
     }
 
     public static String getHeader(Map<String, String> map) {
