@@ -1,4 +1,4 @@
-package music;
+package main.java.music;
 
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.mp3.MP3AudioHeader;

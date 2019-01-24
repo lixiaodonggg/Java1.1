@@ -1,4 +1,4 @@
-package music;
+package main.java.music;
 
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.Player;
@@ -13,6 +13,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -24,7 +25,7 @@ import javax.swing.*;
 
 public class MusicPlayer implements ActionListener {
 
-    private JFrame frame = new JFrame("音乐");
+    private JFrame frame = new JFrame("QQ音乐");
     private String LOCATION;
     //按钮
     private JButton input = new JButton("导入");
@@ -55,7 +56,7 @@ public class MusicPlayer implements ActionListener {
     private String musicName; //当前播放的乐曲名称
     private String nextMusicName;//下一曲
 
-    Map<String, String> songPathMap = new HashMap<>(); //歌曲名称和路径的键值对
+    private Map<String, String> songPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private Map<String, String> lrcPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private boolean changed = false; //列表是否改变
     private java.util.List<String> saveList; //路径保存的列表
@@ -105,7 +106,11 @@ public class MusicPlayer implements ActionListener {
         play.addActionListener(this);
         stop.addActionListener(this);
         textArea.setFont(new Font(null, Font.PLAIN, 18));   // 设置字体
+        textArea.setEditable(false);
         loadSong();
+        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.png");
+        ImageIcon image = new ImageIcon(resource);
+        frame.setIconImage(image.getImage());
         frame.setVisible(true);
     }
 

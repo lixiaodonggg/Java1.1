@@ -15,7 +15,7 @@
             <configuration>
                 <archive>
                     <manifest>
-                        <mainClass>music.MusicPlayer</mainClass>
+                        <mainClass>main.java.music.MusicPlayer</mainClass>
                     </manifest>
                 </archive>
                 <descriptorRefs>
