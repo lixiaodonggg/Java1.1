@@ -107,12 +107,28 @@ public class MusicPlayer implements ActionListener {
         textArea.setEditable(false);
         //歌曲列表的加载
         loadSong();
+        autoPlay();
         //改变图标
         URL resource = MusicPlayer.class.getClassLoader().getResource("icon.png");
         assert resource != null;
         ImageIcon image = new ImageIcon(resource);
         frame.setIconImage(image.getImage());
         frame.setVisible(true);
+    }
+
+    private void loadSong() {
+        if (list.getItemCount() == 0) {  //加载文件
+            saveList = Utils.load();
+            if (saveList != null) {
+                for (String savePath : saveList) {
+                    new Thread(() -> Utils.findAll(list, savePath, songPathMap, lrcPathMap))
+                            .start();
+                }
+            }
+        }
+    }
+
+    public void autoPlay(){
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(); //监听歌曲线程
         service.scheduleAtFixedRate(() -> {
             if (player != null && player.isComplete()) {
@@ -135,18 +151,6 @@ public class MusicPlayer implements ActionListener {
                 }
             }
         }, 1, 3, TimeUnit.SECONDS);
-    }
-
-    private void loadSong() {
-        if (list.getItemCount() == 0) {  //加载文件
-            saveList = Utils.load();
-            if (saveList != null) {
-                for (String savePath : saveList) {
-                    new Thread(() -> Utils.findAll(list, savePath, songPathMap, lrcPathMap))
-                            .start();
-                }
-            }
-        }
     }
 
     public void listener() {

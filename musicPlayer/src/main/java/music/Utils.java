@@ -216,7 +216,7 @@ public class Utils {
 
     public static String getHeader(Map<String, String> map) {
         StringBuilder stringBuffer = new StringBuilder();
-        stringBuffer.append("  ").append("标题:").append(map.get("ti")).append("\n");
+        stringBuffer.append("  ").append(map.get("ti")).append("\n");
         stringBuffer.append("  ").append("作者:").append(map.get("ar")).append("\n");
         stringBuffer.append("  ").append("歌词制作:").append("QAQ").append("\n");
         return stringBuffer.toString();
