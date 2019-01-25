@@ -43,7 +43,7 @@ public class Utils {
         }
     }
 
-    public static String shortCut(String string) {
+    private static String shortCut(String string) {
         String cut;
         String[] strs = string.split("-");
         if (strs.length > 1) {
@@ -54,7 +54,7 @@ public class Utils {
         return cut;
     }
 
-    public static String open() {
+    private static String open() {
         final JFileChooser fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         fc.showOpenDialog(new Frame());
@@ -65,22 +65,18 @@ public class Utils {
         return path.getAbsolutePath();
     }
 
-    public static void save(java.util.List list) {
+    private static void save(java.util.List list) {
         File file = new File("musicPath.txt");
         writeList(list, file);
     }
 
     private static void writeList(java.util.List<String> list, File file) {
-        PrintWriter out = null;
-        try {
-            out = new PrintWriter(file, "utf-8");
+        try (PrintWriter out = new PrintWriter(file, "utf-8")) {
             for (String str : list) {
                 out.println(str);
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            out.close();
         }
     }
 
@@ -112,6 +108,7 @@ public class Utils {
             e.printStackTrace();
         } finally {
             try {
+                assert ios != null;
                 ios.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -131,10 +128,10 @@ public class Utils {
     }
 
     public static String secToTime(int time) {
-        String timeStr = null;
-        int hour = 0;
-        int minute = 0;
-        int second = 0;
+        String timeStr;
+        int hour;
+        int minute;
+        int second;
         if (time <= 0) {
             return "00:00";
         } else {
@@ -221,7 +218,7 @@ public class Utils {
         StringBuilder stringBuffer = new StringBuilder();
         stringBuffer.append("  ").append("标题:").append(map.get("ti")).append("\n");
         stringBuffer.append("  ").append("作者:").append(map.get("ar")).append("\n");
-        stringBuffer.append("  ").append("歌词制作:").append("dog").append("\n");
+        stringBuffer.append("  ").append("歌词制作:").append("QAQ").append("\n");
         return stringBuffer.toString();
     }
 }
