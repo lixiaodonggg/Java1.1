@@ -45,16 +45,16 @@ public class Utils {
 
     private static String shortCut(String string) {
         String cut;
-        String[] strs = string.split("-");
-        if (strs.length > 1) {
-            cut = strs[1].substring(0, strs[1].lastIndexOf(".")).trim();
+        String[] str = string.split("-");
+        if (str.length > 1) {
+            cut = str[1].substring(0, str[1].lastIndexOf(".")).trim();
         } else {
-            cut = strs[0].substring(0, strs[0].lastIndexOf(".")).trim();
+            cut = str[0].substring(0, str[0].lastIndexOf(".")).trim();
         }
         return cut;
     }
 
-    private static String open() {
+    public static String open() {
         final JFileChooser fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         fc.showOpenDialog(new Frame());
@@ -65,7 +65,7 @@ public class Utils {
         return path.getAbsolutePath();
     }
 
-    private static void save(java.util.List list) {
+    public static void save(java.util.List<String> list) {
         File file = new File("musicPath.txt");
         writeList(list, file);
     }

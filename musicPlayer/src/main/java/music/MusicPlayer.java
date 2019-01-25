@@ -82,7 +82,7 @@ public class MusicPlayer implements ActionListener {
      */
     public void init() {
         //面板初始化
-        frame.setBounds(300, 400, 550, 590);
+        frame.setBounds(400, 200, 400, 590);
         listPanel.add(list);
         sliderPanel.add(leftLabel, BorderLayout.WEST);
         sliderPanel.add(slider, BorderLayout.CENTER);
@@ -120,10 +120,18 @@ public class MusicPlayer implements ActionListener {
             }
             if (!deleteName.equals(name)) { //删除歌曲
                 if (!deleteName.isEmpty()) {
-                    if (Utils.deleteSong(deleteName)) {
-                        System.out.println(deleteName + "删除成功！！");
-                        deleteName = "";
+                    boolean succeed = false;
+                    String delete = songPathMap.remove(deleteName); //歌曲
+                    if (delete != null) {
+                        succeed = Utils.deleteSong(delete);
                     }
+                    delete = lrcPathMap.remove(deleteName);//歌词
+                    if (delete != null) {
+                        Utils.deleteSong(delete);
+                    }
+                    list.remove(deleteName);
+                    System.out.println(succeed ? deleteName + "删除成功！！" : "删除失败！！");
+                    deleteName = "";
                 }
             }
         }, 1, 3, TimeUnit.SECONDS);
@@ -224,8 +232,10 @@ public class MusicPlayer implements ActionListener {
 
     private void deleteSong() {
         String item = list.getItem(index);
-        deleteName = songPathMap.remove(item);
-        list.remove(item);
+        if (deleteName.equals(item)) {
+            return;
+        }
+        deleteName = item;
     }
 
     public void randomPlay() {
@@ -272,7 +282,7 @@ public class MusicPlayer implements ActionListener {
             player = new Player(new FileInputStream(songPathMap.get(musicName)));
             totalTime = Utils.getMp3Time(songPathMap.get(musicName));
             String path = lrcPathMap.get(musicName);
-            name = songPathMap.get(musicName);
+            name = musicName;
             if (path != null) {
                 lrcMap = Utils.readLRC(path);
                 textArea.append(Utils.getHeader(lrcMap));
