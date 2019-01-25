@@ -40,22 +40,19 @@ public class MusicPlayer implements ActionListener {
     private JPanel sliderPanel = new JPanel();//进度条面板
     private JPanel textPanel = new JPanel();//歌词面板
     private String[] modeName = {"顺序播放", "单曲循环", "随机播放"};
-    private JComboBox modeBox = new JComboBox(modeName);
+    private JComboBox<String> modeBox = new JComboBox<>(modeName);
     //进度条
     private JSlider slider = new JSlider();
     private JLabel leftLabel = new JLabel(Utils.secToTime(0));
     private JLabel rightLabel = new JLabel(Utils.secToTime(0));
-    private List list = new List(10);  //列表
+    private List list = new List(10);
     //文字域
     private JTextArea textArea = new JTextArea(10, 20);
+
     private Player player; //播放
     private Thread thread; //播放线程
     private Thread time; //时间线程
     private int index;//当前播放的音乐索引
-    private int nextIndex;//下一首音乐索引
-    private String musicName; //当前播放的乐曲名称
-    private String nextMusicName;//下一曲
-
     private Map<String, String> songPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private Map<String, String> lrcPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private boolean changed = false; //列表是否改变
@@ -67,6 +64,7 @@ public class MusicPlayer implements ActionListener {
     private JScrollPane scrollPane =
             new JScrollPane(textArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                     ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
 
     public MusicPlayer() {
         init();//初始化
@@ -81,9 +79,8 @@ public class MusicPlayer implements ActionListener {
      * 窗口初始化
      */
     public void init() {
-
         //面板初始化
-        frame.setBounds(300, 400, 550, 550);
+        frame.setBounds(300, 400, 550, 590);
         listPanel.add(list);
         sliderPanel.add(leftLabel, BorderLayout.WEST);
         sliderPanel.add(slider, BorderLayout.CENTER);
@@ -112,6 +109,12 @@ public class MusicPlayer implements ActionListener {
         ImageIcon image = new ImageIcon(resource);
         frame.setIconImage(image.getImage());
         frame.setVisible(true);
+        ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(); //监听歌曲线程
+        service.scheduleAtFixedRate(() -> {
+            if (player != null && player.isComplete()) {
+                choose2Play();
+            }
+        }, 1, 3, TimeUnit.SECONDS);
     }
 
     private void loadSong() {
@@ -132,6 +135,7 @@ public class MusicPlayer implements ActionListener {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     playFile(list.getSelectedItem());
+                    index = list.getSelectedIndex();
                 }
             }
         });
@@ -177,7 +181,7 @@ public class MusicPlayer implements ActionListener {
                 if (thread == null || list.getItemCount() == 0) {
                     return;
                 }
-                next();
+                choose2Play();
                 break;
             case "上一首":
                 if (thread == null || list.getItemCount() == 0) {
@@ -242,8 +246,7 @@ public class MusicPlayer implements ActionListener {
         try {
             player = new Player(new FileInputStream(songPathMap.get(musicName)));
             totalTime = Utils.getMp3Time(songPathMap.get(musicName));
-            this.musicName = musicName;
-            String path = lrcPathMap.get(Utils.replaceSuffix(musicName, ".lrc"));
+            String path = lrcPathMap.get(musicName);
             if (path != null) {
                 lrcMap = Utils.readLRC(path);
                 textArea.append(Utils.getHeader(lrcMap));
@@ -259,7 +262,6 @@ public class MusicPlayer implements ActionListener {
     }
 
     private void play() {
-
         thread = new Thread(() -> {
             try {
                 if (player != null) {
@@ -267,8 +269,6 @@ public class MusicPlayer implements ActionListener {
                 }
             } catch (JavaLayerException e) {
                 e.printStackTrace();
-            } finally {
-                next();
             }
         });
         thread.start();
@@ -278,7 +278,6 @@ public class MusicPlayer implements ActionListener {
         int end = totalTime;
         slider.setMinimum(start);
         slider.setMaximum(end);
-
         rightLabel.setText(Utils.secToTime(totalTime));
         time = new Thread(() -> {
             while (!player.isComplete()) {
@@ -293,17 +292,17 @@ public class MusicPlayer implements ActionListener {
         serviceLRC = Executors.newSingleThreadScheduledExecutor();
         ((ScheduledExecutorService) serviceLRC).scheduleAtFixedRate(() -> {
             if (!player.isComplete()) {
-                String time1 = Utils.secToTime(player.getPosition() / 1000 + 1);
-                if (time1.equals(lrcshow)) {
+                String time = Utils.secToTime(player.getPosition() / 1000 + 1);
+                if (time.equals(lrcshow)) {
                     return;
                 }
-                String lrc = lrcMap.remove(time1);
+                String lrc = lrcMap.remove(time);
                 if (lrc != null) {
                     System.out.println(lrc);
                     textArea.append("   ");
                     textArea.append(lrc);
                     textArea.append("\n");
-                    lrcshow = time1;
+                    lrcshow = time;
                     JScrollBar jscrollBar = scrollPane.getVerticalScrollBar();
                     if (jscrollBar != null) {
                         jscrollBar.setValue(jscrollBar.getMaximum());
@@ -311,7 +310,20 @@ public class MusicPlayer implements ActionListener {
                 }
             }
         }, 0, 1000, TimeUnit.MILLISECONDS);
+    }
 
+    private void choose2Play() {
+        switch (modeBox.getModel().getSelectedItem().toString()) {
+            case "顺序播放":
+                next();
+                break;
+            case "单曲循环":
+                playFile(list.getItem(index));
+                break;
+            case "随机播放":
+                randomPlay();
+                break;
+        }
     }
 
     public void next() {

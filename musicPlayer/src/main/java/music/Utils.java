@@ -29,17 +29,29 @@ public class Utils {
                     String name = file.getName();
                     if (name.endsWith(".mp3") || name.endsWith(".wma") || name.endsWith(".ape") ||
                             name.endsWith(".wav") || name.endsWith(".midi")) {
-                        String success = songMap.put(file.getName(), file.getAbsolutePath());
+                        String success =
+                                songMap.put(shortCut(file.getName()), file.getAbsolutePath());
                         if (success == null) {
-                            list.add(file.getName());
+                            list.add(shortCut(file.getName()));
                         }
                     }
                     if (name.endsWith(".lrc")) {
-                        lrcMap.put(file.getName(), file.getAbsolutePath());
+                        lrcMap.put(shortCut(file.getName()), file.getAbsolutePath());
                     }
                 }
             }
         }
+    }
+
+    public static String shortCut(String string) {
+        String cut;
+        String[] strs = string.split("-");
+        if (strs.length > 1) {
+            cut = strs[1].substring(0, strs[1].lastIndexOf(".")).trim();
+        } else {
+            cut = strs[0].substring(0, strs[0].lastIndexOf(".")).trim();
+        }
+        return cut;
     }
 
     public static String open() {
@@ -201,8 +213,8 @@ public class Utils {
     }
 
     public static String replaceSuffix(String str, String suffix) {
-        String s = str.substring(0, str.indexOf("."));
-        return s + suffix;
+//        String s = str.substring(0, str.indexOf("."));
+        return str + suffix;
     }
 
     public static String getHeader(Map<String, String> map) {
