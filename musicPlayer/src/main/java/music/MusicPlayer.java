@@ -3,7 +3,6 @@ package main.java.music;
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.Player;
 
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -29,11 +28,12 @@ public class MusicPlayer implements ActionListener {
     private String LOCATION;
     //按钮
     private JButton input = new JButton("导入");
-    private JLabel song = new JLabel("曲名");
+    private JLabel song = new JLabel("歌曲名字");
     private JButton play = new JButton("播放");
     private JButton stop = new JButton("停止");
     private JButton next = new JButton("下一首");
     private JButton previous = new JButton("上一首");
+    private JButton delete = new JButton("删除");
     //面板
     private JPanel buttonPanel = new JPanel(); //按钮面板
     private JPanel listPanel = new JPanel(); //列表面板
@@ -49,10 +49,13 @@ public class MusicPlayer implements ActionListener {
     //文字域
     private JTextArea textArea = new JTextArea(10, 20);
 
-    private Player player; //播放
+    private Player player; //播放器
     private Thread thread; //播放线程
     private Thread time; //时间线程
     private int index;//当前播放的音乐索引
+    private String name = "";//当前播放的歌曲名称
+    private String deleteName = ""; //需要删除的歌曲名字
+    private int second; //歌词时间
     private Map<String, String> songPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private Map<String, String> lrcPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private boolean changed = false; //列表是否改变
@@ -60,11 +63,10 @@ public class MusicPlayer implements ActionListener {
     private int totalTime; //当前歌曲总时间
     private ExecutorService serviceLRC;
     private Map<String, String> lrcMap;
-    private volatile String lrcshow;
+    private volatile String lrcTime; //歌词时间字符串
     private JScrollPane scrollPane =
             new JScrollPane(textArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
                     ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-
 
     public MusicPlayer() {
         init();//初始化
@@ -94,18 +96,20 @@ public class MusicPlayer implements ActionListener {
         buttonPanel.add(stop);
         buttonPanel.add(input);
         buttonPanel.add(modeBox);
+        buttonPanel.add(delete);
         frame.setLayout(new FlowLayout());
         frame.add(listPanel);
         frame.add(sliderPanel);
         frame.add(textPanel);
         frame.add(buttonPanel);
         textPanel.add(scrollPane);
-        play.addActionListener(this);
-        stop.addActionListener(this);
         textArea.setFont(new Font(null, Font.PLAIN, 18));   // 设置字体
         textArea.setEditable(false);
+        //歌曲列表的加载
         loadSong();
+        //改变图标
         URL resource = MusicPlayer.class.getClassLoader().getResource("icon.png");
+        assert resource != null;
         ImageIcon image = new ImageIcon(resource);
         frame.setIconImage(image.getImage());
         frame.setVisible(true);
@@ -113,6 +117,14 @@ public class MusicPlayer implements ActionListener {
         service.scheduleAtFixedRate(() -> {
             if (player != null && player.isComplete()) {
                 choose2Play();
+            }
+            if (!deleteName.equals(name)) { //删除歌曲
+                if (!deleteName.isEmpty()) {
+                    if (Utils.deleteSong(deleteName)) {
+                        System.out.println(deleteName + "删除成功！！");
+                        deleteName = "";
+                    }
+                }
             }
         }, 1, 3, TimeUnit.SECONDS);
     }
@@ -143,6 +155,9 @@ public class MusicPlayer implements ActionListener {
         next.addActionListener(this);
         input.addActionListener(this);
         previous.addActionListener(this);
+        delete.addActionListener(this);
+        play.addActionListener(this);
+        stop.addActionListener(this);
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -201,7 +216,16 @@ public class MusicPlayer implements ActionListener {
                 changed = true;
                 saveSong();
                 break;
+            case "删除":
+                deleteSong();
+                break;
         }
+    }
+
+    private void deleteSong() {
+        String item = list.getItem(index);
+        deleteName = songPathMap.remove(item);
+        list.remove(item);
     }
 
     public void randomPlay() {
@@ -219,9 +243,11 @@ public class MusicPlayer implements ActionListener {
         }
         thread.stop();
         time.stop();
-        serviceLRC.shutdownNow();
+        if (serviceLRC != null) {
+            serviceLRC.shutdownNow();
+        }
         player.close();
-        song.setText("选曲");
+        song.setText("歌曲名字");
         play.setText("播放");
     }
 
@@ -232,7 +258,6 @@ public class MusicPlayer implements ActionListener {
         thread.suspend();
         time.suspend();
         play.setText("播放");
-
     }
 
     public void playFile(String musicName) {
@@ -247,6 +272,7 @@ public class MusicPlayer implements ActionListener {
             player = new Player(new FileInputStream(songPathMap.get(musicName)));
             totalTime = Utils.getMp3Time(songPathMap.get(musicName));
             String path = lrcPathMap.get(musicName);
+            name = songPathMap.get(musicName);
             if (path != null) {
                 lrcMap = Utils.readLRC(path);
                 textArea.append(Utils.getHeader(lrcMap));
@@ -292,8 +318,9 @@ public class MusicPlayer implements ActionListener {
         serviceLRC = Executors.newSingleThreadScheduledExecutor();
         ((ScheduledExecutorService) serviceLRC).scheduleAtFixedRate(() -> {
             if (!player.isComplete()) {
-                String time = Utils.secToTime(player.getPosition() / 1000 + 1);
-                if (time.equals(lrcshow)) {
+                int second = player.getPosition() / 1000 + 1;
+                String time = Utils.secToTime(second);
+                if (time.equals(lrcTime) || this.second == second) {
                     return;
                 }
                 String lrc = lrcMap.remove(time);
@@ -302,7 +329,8 @@ public class MusicPlayer implements ActionListener {
                     textArea.append("   ");
                     textArea.append(lrc);
                     textArea.append("\n");
-                    lrcshow = time;
+                    lrcTime = time;
+                    this.second = second;
                     JScrollBar jscrollBar = scrollPane.getVerticalScrollBar();
                     if (jscrollBar != null) {
                         jscrollBar.setValue(jscrollBar.getMaximum());

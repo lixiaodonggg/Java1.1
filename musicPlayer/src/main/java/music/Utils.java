@@ -212,13 +212,13 @@ public class Utils {
         return map;
     }
 
-    public static String replaceSuffix(String str, String suffix) {
-//        String s = str.substring(0, str.indexOf("."));
-        return str + suffix;
+    public static boolean deleteSong(String name) {
+        File file = new File(name);
+        return file.delete();
     }
 
     public static String getHeader(Map<String, String> map) {
-        StringBuffer stringBuffer = new StringBuffer();
+        StringBuilder stringBuffer = new StringBuilder();
         stringBuffer.append("  ").append("标题:").append(map.get("ti")).append("\n");
         stringBuffer.append("  ").append("作者:").append(map.get("ar")).append("\n");
         stringBuffer.append("  ").append("歌词制作:").append("dog").append("\n");
