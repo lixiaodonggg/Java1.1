@@ -20,14 +20,15 @@ import static sun.security.pkcs11.wrapper.Constants.NEWLINE;
 
 public class MusicPlayer implements ActionListener {
 
-    private JFrame frame = new JFrame("QQ音乐");
+    private JFrame frame = new JFrame("GFMusic");
     private JButton input = new JButton("导入");
-    private JLabel song = new JLabel("歌曲名字");
+    private JLabel song = new JLabel("");
     private JButton play = new JButton("播放");
     private JButton stop = new JButton("停止");
     private JButton next = new JButton("下一首");
     private JButton previous = new JButton("上一首");
     private JButton delete = new JButton("删除");
+    private JButton deleteFile = new JButton("删除文件");
     //面板
     private JPanel buttonPanel = new JPanel(); //按钮面板
     private JPanel sliderPanel = new JPanel();//进度条面板
@@ -49,8 +50,6 @@ public class MusicPlayer implements ActionListener {
     private Thread thread; //播放线程
     private Thread time; //时间线程
     private int index;//当前播放的音乐索引
-    private String name = "";//当前播放的歌曲名称
-    private String deleteName = ""; //需要删除的歌曲名字
     private int second; //歌词时间
     private Map<String, String> songPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private Map<String, String> lrcPathMap = new HashMap<>(); //歌曲名称和路径的键值对
@@ -62,8 +61,9 @@ public class MusicPlayer implements ActionListener {
     private JScrollPane scrollPane =
             new JScrollPane(textArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
                     ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-    private int deleteIndex;
     private String lastLrc;
+    private boolean needturn = true;
+
     public MusicPlayer() {
         init();//初始化
         listener();//监听
@@ -83,7 +83,7 @@ public class MusicPlayer implements ActionListener {
      * 主面板
      */
     private void mainFrame() {
-        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.png");
+        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.jpg");
         assert resource != null;
         ImageIcon image = new ImageIcon(resource);
         frame.setIconImage(image.getImage());
@@ -152,7 +152,8 @@ public class MusicPlayer implements ActionListener {
         buttonPanel.add(stop);
         buttonPanel.add(input);
         buttonPanel.add(modeBox);
-        buttonPanel.add(delete);
+        buttonPanel.add(delete);//deleteFile
+        buttonPanel.add(deleteFile);
         controlPanel.add(buttonPanel, BorderLayout.CENTER);
         return controlPanel;
     }
@@ -175,23 +176,6 @@ public class MusicPlayer implements ActionListener {
             if (player != null && player.isComplete()) {
                 choose2Play();
             }
-            if (!deleteName.equals(name)) { //删除歌曲
-                if (!deleteName.isEmpty()) {
-                    boolean succeed = false;
-                    String delete = songPathMap.remove(deleteName); //歌曲
-                    if (delete != null) {
-                        succeed = Utils.deleteSong(delete);
-                    }
-                    delete = lrcPathMap.remove(deleteName);//歌词
-                    if (delete != null) {
-                        Utils.deleteSong(delete);
-                    }
-                    DefaultListModel<String> model = (DefaultListModel<String>) jList.getModel();
-                    model.remove(deleteIndex);
-                    System.out.println(succeed ? deleteName + "删除成功！！" : "删除失败！！");
-                    deleteName = "";
-                }
-            }
         }, 1, 3, TimeUnit.SECONDS);
     }
 
@@ -205,7 +189,9 @@ public class MusicPlayer implements ActionListener {
                     if (index==selectedIndex){
                         return;
                     }
+                    needturn = false;
                     playFile(jList.getSelectedValue());
+                    needturn = true;
                     index = selectedIndex;
                     jList.setSelectedIndex(index);
                 }
@@ -217,6 +203,7 @@ public class MusicPlayer implements ActionListener {
         input.addActionListener(this);
         previous.addActionListener(this);
         delete.addActionListener(this);
+        deleteFile.addActionListener(this);
         play.addActionListener(this);
         stop.addActionListener(this);
         frame.addWindowListener(new WindowAdapter() {
@@ -284,16 +271,37 @@ public class MusicPlayer implements ActionListener {
             case "删除":
                 deleteSong();
                 break;
+            case "删除文件":
+                deleteFile();
+                break;
         }
     }
 
     private void deleteSong() {
-        String item = getName();
-        if (deleteName.equals(item)) {
+        DefaultListModel<String> listModel = (DefaultListModel<String>) jList.getModel();
+        int index = jList.getSelectedIndex();
+        String name = ((DefaultListModel<String>) jList.getModel()).get(jList.getSelectedIndex());
+        listModel.remove(index);
+        jList.setSelectedIndex(index);
+        songPathMap.remove(name); //歌曲
+        lrcPathMap.remove(name);//歌词
+    }
+
+    private void deleteFile() {
+        DefaultListModel<String> listModel = (DefaultListModel<String>) jList.getModel();
+        String name = ((DefaultListModel<String>) jList.getModel()).get(jList.getSelectedIndex());
+        if (name.equals(getName())){
             return;
         }
-        deleteName = item;
-        deleteIndex = index;
+        listModel.remove(jList.getSelectedIndex());
+        String delete = songPathMap.remove(name); //歌曲
+        if (delete != null) {
+            Utils.deleteSong(delete);
+        }
+        delete = lrcPathMap.remove(name);//歌词
+        if (delete != null) {
+            Utils.deleteSong(delete);
+        }
     }
 
     private void randomPlay() {
@@ -315,9 +323,6 @@ public class MusicPlayer implements ActionListener {
         }
         thread.stop();
         time.stop();
-   /*     if (serviceLRC != null) {
-            serviceLRC.shutdownNow();
-        }*/
         player.close();
         play.setText("播放");
     }
@@ -340,14 +345,13 @@ public class MusicPlayer implements ActionListener {
             lrcMap.clear();
         }
         JScrollBar jscrollBar = scrollPaneList.getVerticalScrollBar();
-        if (jscrollBar != null) {
-            jscrollBar.setValue(index*20);
+        if (jscrollBar != null&&needturn) {
+            jscrollBar.setValue((index-3)*20);
         }
         try {
             player = new Player(new FileInputStream(songPathMap.get(musicName)));
             totalTime = Utils.getMp3Time(songPathMap.get(musicName));
             String path = lrcPathMap.get(musicName);
-            name = musicName;
             jList.setSelectedIndex(index);
             if (path != null) {
                 lrcMap = Utils.readLRC(path);
