@@ -110,6 +110,7 @@ public class MusicPlayer implements ActionListener {
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
         jList.setCellRenderer(renderer);
         jList.setSelectionBackground(new Color(255, 76, 95));
+        jList.setFont(new Font("微软雅黑", Font.BOLD, 14));
         jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         jList.setValueIsAdjusting(true);
         return listPanel;
