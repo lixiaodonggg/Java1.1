@@ -1,4 +1,4 @@
-package main.java.music;
+package main.music;
 
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.mp3.MP3AudioHeader;
@@ -21,8 +21,8 @@ import javax.swing.*;
 
 //mp3,wma,ape,wav,midi
 public class Utils {
-    public static void findAll(DefaultListModel<String> list, String path,
-            Map<String, String> songMap, Map<String, String> lrcMap) {
+    public static void findAll(DefaultListModel<String> list, String path, Map<String, String> songMap,
+                               Map<String, String> lrcMap) {
         File dir = new File(path);
         File[] files = dir.listFiles();
         if (files != null) {
@@ -46,6 +46,7 @@ public class Utils {
             }
         }
     }
+
 
 
     private static String shortCut(String string) {
@@ -167,41 +168,40 @@ public class Utils {
     }
 
 
-    public static int parseTime(String time) {
-        String[] times = time.split(":");
-        assert times.length <= 3;
-        int t = 0;
-        if (times.length == 3) {
-            t = Integer.parseInt(times[0]) * 60 * 60 + Integer.parseInt(times[1]) * 60 +
-                    Integer.parseInt(times[2]);
-        } else if (times.length == 2) {
-            t = Integer.parseInt(times[0]) * 60 + Integer.parseInt(times[1]);
+    public static int parseTime(String time){
+        String []times = time.split(":");
+        assert times.length<=3;
+        int t =0;
+        if (times.length==3){
+          t =Integer.parseInt( times[0])*60*60+Integer.parseInt( times[1])*60+Integer.parseInt( times[2]);
+        }else if (times.length==2){
+            t =Integer.parseInt( times[0])*60+Integer.parseInt( times[1]);
         }
         return t;
     }
 
-    public static Map<Integer, Integer> readLRC(String path, JList<String> list) {
-        DefaultListModel<String> listModel = (DefaultListModel<String>) list.getModel();
+
+    public static Map<Integer, String> readLRC(String path) {
         BufferedReader reader = null;
-        Map<Integer, Integer> map = null;
+        Map<Integer, String> map = null;
         try {
             reader = new BufferedReader(new FileReader(path));
             String str;
             map = new HashMap<>();
-            int index = 0;
             while ((str = reader.readLine()) != null) {
                 if (str.contains("[") && str.contains("]")) {
                     String[] s = str.split(":");
                     if (str.contains("ti")) {
-                        listModel.add(index,s[1].replace("]", ""));
-                        map.put("ti".hashCode(), index++);
+                        map.put("ti".hashCode(), s[1].replace("]", ""));
                     } else if (str.contains("ar")) {
-                        listModel.add(index,s[1].replace("]", ""));
-                        map.put("ar".hashCode(), index++);
+                        map.put("ar".hashCode(), s[1].replace("]", ""));
                     } else if (str.contains("al")) {
+                        map.put("al".hashCode(), s[1].replace("]", ""));
                     } else if (str.contains("by")) {
+                        map.put("by".hashCode(), s[1].replace("]", ""));
                     } else if (str.contains("offset")) {
-                    }else {
+                        map.put("offset".hashCode(), s[1].replace("]", ""));
+                    } else {
                         String[] s1 = str.split("\\.");
                         String time = s1[0].replace("[", "");
                         String[] s2 = s1[1].split("]");
@@ -209,8 +209,7 @@ public class Utils {
                         if (lrc.isEmpty()) {
                             continue;
                         }
-                        listModel.add(index,lrc);
-                        map.put(parseTime(time), index++);
+                        map.put(parseTime(time), lrc);
                     }
                 }
             }
@@ -228,11 +227,17 @@ public class Utils {
         return map;
     }
 
-
     public static boolean deleteSong(String name) {
         File file = new File(name);
         return file.delete();
     }
 
+    public static String getHeader(Map<Integer, String> map) {
+        StringBuilder stringBuffer = new StringBuilder();
+        stringBuffer.append("\t     ").append(map.get("ti".hashCode())).append("\n");
+        stringBuffer.append("\t     ").append("作者:").append(map.get("ar".hashCode())).append("\n");
+        stringBuffer.append("\t     ").append("歌词制作:").append("QAQ").append("\n");
+        return stringBuffer.toString();
+    }
 }
 

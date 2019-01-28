@@ -1,4 +1,4 @@
-package main.java.music;
+package main.music;
 
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.Player;
@@ -15,11 +15,17 @@ import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.swing.*;
+
+import main.java.music.MySliderUI;
+import main.music.Utils;
+
+import static sun.security.pkcs11.wrapper.Constants.NEWLINE;
 
 public class MusicPlayer implements ActionListener {
 
@@ -35,19 +41,21 @@ public class MusicPlayer implements ActionListener {
     //面板
     private JPanel buttonPanel = new JPanel(); //按钮面板
     private JPanel sliderPanel = new JPanel();//进度条面板
-    //    private JPanel textPanel = new JPanel();
+    private JPanel textPanel = new JPanel();
     private String[] modeName = {"顺序播放", "单曲循环", "随机播放"};
     private JComboBox<String> modeBox = new JComboBox<>(modeName);
     //进度条
     private JSlider slider = new JSlider();
-    private JLabel leftLabel = new JLabel(Utils.secToTime(0));
-    private JLabel rightLabel = new JLabel(Utils.secToTime(0));
+    private JLabel leftLabel = new JLabel(main.java.music.Utils.secToTime(0));
+    private JLabel rightLabel = new JLabel(main.java.music.Utils.secToTime(0));
     private JScrollPane scrollPaneList;
     private DefaultListModel<String> list = new DefaultListModel<>();
     //文字域
     private JList<String> jList = new JList<>(list);
+    private JTextArea textArea = new JTextArea(12, 27);
 
     private Player player; //播放器
+
     private Thread thread; //播放线程
     private Thread time; //时间线程
     private int index;//当前播放的音乐索引
@@ -57,14 +65,14 @@ public class MusicPlayer implements ActionListener {
     private boolean changed = false; //列表是否改变
     private java.util.List<String> saveList; //路径保存的列表
     private int totalTime; //当前歌曲总时间
-    private Map<Integer, Integer> lrcMapInt;
+    private ExecutorService serviceLRC = Executors.newSingleThreadScheduledExecutor();
+    private Map<Integer, String> lrcMap;
+    private JScrollPane scrollPane =
+            new JScrollPane(textArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+                    ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+    private String lastLrc;
     private boolean needturn = true;
-    //下方代码为测试
-    private DefaultListModel<String> lrc = new DefaultListModel<>();
-    //文字域
-    private JList<String> lrcList = new JList<>(lrc);
-    private JScrollPane lrcScrollPaneList;
-    ScheduledExecutorService serviceLRC = Executors.newSingleThreadScheduledExecutor();
+
     public MusicPlayer() {
         init();//初始化
         listener();//监听
@@ -88,7 +96,7 @@ public class MusicPlayer implements ActionListener {
         assert resource != null;
         ImageIcon image = new ImageIcon(resource);
         frame.setIconImage(image.getImage());
-        frame.setBounds(400, 200, 400, 550);
+        frame.setBounds(400, 200, 400, 610);
         frame.add(listPanel(), BorderLayout.NORTH);
         frame.add(lrcPanel(), BorderLayout.CENTER);
         frame.add(controlPanel(), BorderLayout.SOUTH);
@@ -105,11 +113,11 @@ public class MusicPlayer implements ActionListener {
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         JPanel listPanel = new JPanel();
         listPanel.add(scrollPaneList, BorderLayout.SOUTH);
-        jList.setFixedCellWidth(410);
+        jList.setFixedCellWidth(380);
         DefaultListCellRenderer renderer = new DefaultListCellRenderer();
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
         jList.setCellRenderer(renderer);
-        jList.setSelectionBackground(new Color(135, 206, 250));
+        jList.setSelectionBackground(new Color(255, 76, 95));
         jList.setFont(new Font("微软雅黑", Font.BOLD, 14));
         jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         jList.setValueIsAdjusting(true);
@@ -125,20 +133,20 @@ public class MusicPlayer implements ActionListener {
         namePanel.add(song);
         song.setFont(new Font("微软雅黑", Font.PLAIN, 20));
         song.setForeground(new Color(255, 76, 95));
- /*     textArea.setForeground(Color.BLACK);
+        textArea.setForeground(Color.BLACK);
         textPanel.add(scrollPane);
         textPanel.setOpaque(false);
         textArea.setFont(new Font("微软雅黑", Font.PLAIN, 16));   // 设置字体
         textArea.setEditable(false);
         textArea.setSelectedTextColor(Color.BLUE);
-        textArea.setAlignmentX(Component.CENTER_ALIGNMENT);*/
+        textArea.setAlignmentX(Component.CENTER_ALIGNMENT);
         lrcPanel.setLayout(new BorderLayout());
         slider.setUI(new MySliderUI(slider));
         sliderPanel.add(leftLabel, BorderLayout.WEST);
         sliderPanel.add(slider, BorderLayout.CENTER);
         sliderPanel.add(rightLabel, BorderLayout.EAST);
         lrcPanel.add(namePanel, BorderLayout.NORTH);
-        lrcPanel.add(newLrcPanel(), BorderLayout.CENTER);
+        lrcPanel.add(textPanel, BorderLayout.CENTER);
         lrcPanel.add(sliderPanel, BorderLayout.SOUTH);
         return lrcPanel;
     }
@@ -216,33 +224,17 @@ public class MusicPlayer implements ActionListener {
         buttonPanel.add(modeBox);
         buttonPanel.add(delete);
         buttonPanel.add(deleteFile);
-        controlPanel.add(buttonPanel, BorderLayout.SOUTH);
+        controlPanel.add(buttonPanel, BorderLayout.NORTH);
         return controlPanel;
-    }
-
-    public JPanel newLrcPanel() {
-        lrcScrollPaneList = new JScrollPane(lrcList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        JPanel pane = new JPanel();
-        pane.add(lrcScrollPaneList);
-        lrcList.setFixedCellWidth(410);
-        lrcList.setVisibleRowCount(8);
-        DefaultListCellRenderer renderer = new DefaultListCellRenderer();
-        renderer.setHorizontalAlignment(SwingConstants.CENTER);
-        lrcList.setCellRenderer(renderer);
-        lrcList.setSelectionBackground(new Color(64, 224, 208));
-        lrcList.setFont(new Font("微软雅黑", Font.PLAIN, 16));
-        lrcList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        lrcList.setValueIsAdjusting(true);
-        return pane;
     }
 
     private void loadSong() {
         if (getSize() == 0) {  //加载文件
-            saveList = Utils.load();
+            saveList = main.java.music.Utils.load();
             if (saveList != null) {
                 for (String savePath : saveList) {
-                    new Thread(() -> Utils.findAll(list, savePath, songPathMap, lrcPathMap))
+                    new Thread(() -> main.java.music.Utils
+                            .findAll(list, savePath, songPathMap, lrcPathMap))
                             .start();
                 }
             }
@@ -296,7 +288,7 @@ public class MusicPlayer implements ActionListener {
     private void saveSong() {
         //保存数据
         if (jList.getVisibleRowCount() > 0 && changed) {
-            Utils.save(saveList);
+            main.java.music.Utils.save(saveList);
             changed = false;
         }
     }
@@ -336,14 +328,14 @@ public class MusicPlayer implements ActionListener {
                 previous();
                 break;
             case "导入":
-                String LOCATION = Utils.open();
+                String LOCATION = main.java.music.Utils.open();
                 if (LOCATION == null) {
                     return;
                 }
                 if (!saveList.contains(LOCATION)) {
                     saveList.add(LOCATION);
                 }
-                Utils.findAll(list, LOCATION, songPathMap, lrcPathMap);
+                main.java.music.Utils.findAll(list, LOCATION, songPathMap, lrcPathMap);
                 changed = true;
                 saveSong();
                 break;
@@ -389,11 +381,11 @@ public class MusicPlayer implements ActionListener {
         listModel.remove(jList.getSelectedIndex());
         String delete = songPathMap.remove(name); //歌曲
         if (delete != null) {
-            Utils.deleteSong(delete);
+            main.java.music.Utils.deleteSong(delete);
         }
         delete = lrcPathMap.remove(name);//歌词
         if (delete != null) {
-            Utils.deleteSong(delete);
+            main.java.music.Utils.deleteSong(delete);
         }
     }
 
@@ -410,22 +402,17 @@ public class MusicPlayer implements ActionListener {
         song.setText(getName());
     }
 
-    private DefaultListModel<String> getLrcList() {
-        return (DefaultListModel<String>) lrcList.getModel();
-    }
-
-
     private void stop() {
         if (thread == null || player == null) {
             return;
         }
-        getLrcList().clear();
         thread.stop();
         time.stop();
         player.close();
         play.setText("播放");
-        rightLabel.setText(Utils.secToTime(0));
+        rightLabel.setText(main.java.music.Utils.secToTime(0));
         song.setText("");
+        textArea.setText("");
     }
 
     private void pause() {
@@ -438,24 +425,25 @@ public class MusicPlayer implements ActionListener {
     }
 
     private void playFile(String musicName) {
+        textArea.setText("");
         if (player != null) {
             player.close();
         }
-        if (lrcMapInt != null) {
-            lrcMapInt.clear();
+        if (lrcMap != null) {
+            lrcMap.clear();
         }
-        getLrcList().clear();
         JScrollBar jscrollBar = scrollPaneList.getVerticalScrollBar();
         if (jscrollBar != null && needturn) {
-            jscrollBar.setValue((index - 3) * 21);
+            jscrollBar.setValue((index - 3) * 20);
         }
         try {
             player = new Player(new FileInputStream(songPathMap.get(musicName)));
-            totalTime = Utils.getMp3Time(songPathMap.get(musicName));
+            totalTime = main.java.music.Utils.getMp3Time(songPathMap.get(musicName));
             String path = lrcPathMap.get(musicName);
             jList.setSelectedIndex(index);
             if (path != null) {
-                lrcMapInt = Utils.readLRC(path, lrcList);
+                lrcMap = Utils.readLRC(path);
+                textArea.append(Utils.getHeader(lrcMap));
             }
         } catch (JavaLayerException | FileNotFoundException e) {
             e.printStackTrace();
@@ -484,7 +472,7 @@ public class MusicPlayer implements ActionListener {
         int end = totalTime;
         slider.setMinimum(start);
         slider.setMaximum(end);
-        rightLabel.setText(Utils.secToTime(totalTime));
+        rightLabel.setText(main.java.music.Utils.secToTime(totalTime));
         time = new Thread(() -> {
             while (!player.isComplete()) {
                 leftLabel.setText(Utils.secToTime(player.getPosition() / 1000));
@@ -492,20 +480,37 @@ public class MusicPlayer implements ActionListener {
             }
         });
         time.start();
+        if (lrcMap == null) {
+            return;
+        }
         this.second = 0;
-        serviceLRC.scheduleAtFixedRate(() -> {
+        lastLrc = "";
+        ((ScheduledExecutorService) serviceLRC).scheduleAtFixedRate(() -> {
             if (!player.isComplete()) {
                 int second = player.getPosition() / 1000 + 1; //获得当前的时间
                 if (second <= this.second) {
                     return;
                 }
-                Integer index = lrcMapInt.get(second);
-                if (index != null) {
-                    lrcList.setSelectedIndex(index);
-                    JScrollBar jscrollBar = lrcScrollPaneList.getVerticalScrollBar();
-                    if (jscrollBar != null && needturn) {
-                        jscrollBar.setValue((index - 4) * 24);
+                String lrc = lrcMap.get(second); //当前时间对应的歌词
+                if (lastLrc.equals(lrc)) {
+                    return;
+                }
+                if (lrc != null) {
+                    System.out.println(lrc);
+                    textArea.append("\t     ");
+                    textArea.append(lrc);
+                    textArea.append(NEWLINE);
+                    this.second = second;
+                    lastLrc = lrc;
+                    JScrollBar jscrollBar = scrollPane.getVerticalScrollBar();
+                    if (jscrollBar != null) {
+                        jscrollBar.setValue(jscrollBar.getMaximum());
                     }
+                    jscrollBar = scrollPane.getHorizontalScrollBar();
+                    if (jscrollBar != null) {
+                        jscrollBar.setValue(jscrollBar.getMaximum());
+                    }
+
                 }
             }
         }, 1, 1, TimeUnit.SECONDS);
