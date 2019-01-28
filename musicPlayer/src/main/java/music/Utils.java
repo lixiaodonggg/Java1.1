@@ -6,6 +6,7 @@ import org.jaudiotagger.audio.mp3.MP3File;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.font.FontRenderContext;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,32 +15,6 @@ import java.util.Map;
 
 //mp3,wma,ape,wav,midi
 public class Utils {
-    public static void findAll(List list, String path, Map<String, String> songMap,
-                               Map<String, String> lrcMap) {
-        File dir = new File(path);
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    findAll(list, file.getAbsolutePath(), songMap, lrcMap);
-                } else {
-                    String name = file.getName();
-                    if (name.endsWith(".mp3") || name.endsWith(".wma") || name.endsWith(".ape") ||
-                            name.endsWith(".wav") || name.endsWith(".midi")) {
-                        String success =
-                                songMap.put(shortCut(file.getName()), file.getAbsolutePath());
-                        if (success == null) {
-                            list.add(shortCut(file.getName()));
-                        }
-                    }
-                    if (name.endsWith(".lrc")) {
-                        lrcMap.put(shortCut(file.getName()), file.getAbsolutePath());
-                    }
-                }
-            }
-        }
-    }
-
     public static void findAll(DefaultListModel<String> list, String path, Map<String, String> songMap,
                                Map<String, String> lrcMap) {
         File dir = new File(path);
@@ -79,9 +54,6 @@ public class Utils {
         return cut;
     }
 
-
-
-
     public static String open() {
         final JFileChooser fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -107,7 +79,6 @@ public class Utils {
             e.printStackTrace();
         }
     }
-
 
     public static java.util.List<String> load() {
 
@@ -257,9 +228,9 @@ public class Utils {
 
     public static String getHeader(Map<Integer, String> map) {
         StringBuilder stringBuffer = new StringBuilder();
-        stringBuffer.append("\t").append(map.get("ti".hashCode())).append("\n");
-        stringBuffer.append("\t").append("作者:").append(map.get("ar".hashCode())).append("\n");
-        stringBuffer.append("\t").append("歌词制作:").append("QAQ").append("\n");
+        stringBuffer.append("\t     ").append(map.get("ti".hashCode())).append("\n");
+        stringBuffer.append("\t     ").append("作者:").append(map.get("ar".hashCode())).append("\n");
+        stringBuffer.append("\t     ").append("歌词制作:").append("QAQ").append("\n");
         return stringBuffer.toString();
     }
 }

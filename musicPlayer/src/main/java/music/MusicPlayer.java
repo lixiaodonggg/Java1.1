@@ -4,6 +4,7 @@ import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.Player;
 
 import javax.swing.*;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.FileInputStream;
@@ -43,7 +44,7 @@ public class MusicPlayer implements ActionListener {
     private DefaultListModel<String> list = new DefaultListModel<>();
     //文字域
     private JList<String> jList = new JList<>(list);
-    private JTextArea textArea = new JTextArea(10,27);
+    private JTextArea textArea = new JTextArea(12, 27);
 
     private Player player; //播放器
 
@@ -100,16 +101,15 @@ public class MusicPlayer implements ActionListener {
      * 列表面板
      */
     private JPanel listPanel() {
-     scrollPaneList =
-                new JScrollPane(jList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-                        ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPaneList = new JScrollPane(jList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         JPanel listPanel = new JPanel();
         listPanel.add(scrollPaneList, BorderLayout.SOUTH);
         jList.setFixedCellWidth(380);
         DefaultListCellRenderer renderer = new DefaultListCellRenderer();
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
         jList.setCellRenderer(renderer);
-        jList.setSelectionBackground(Color.CYAN);
+        jList.setSelectionBackground(new Color(255, 76, 95));
         jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         jList.setValueIsAdjusting(true);
         return listPanel;
@@ -122,15 +122,17 @@ public class MusicPlayer implements ActionListener {
         JPanel lrcPanel = new JPanel();
         JPanel namePanel = new JPanel();
         namePanel.add(song);
-        song.setFont(new Font(null, Font.PLAIN, 20));
-        song.setForeground(Color.RED);
-        textArea.setForeground(Color.BLUE);
+        song.setFont(new Font("微软雅黑", Font.PLAIN, 20));
+        song.setForeground(new Color(255, 76, 95));
+        textArea.setForeground(Color.BLACK);
         textPanel.add(scrollPane);
         textPanel.setOpaque(false);
-        textArea.setFont(new Font(null, Font.PLAIN, 18));   // 设置字体
+        textArea.setFont(new Font("微软雅黑", Font.PLAIN, 16));   // 设置字体
         textArea.setEditable(false);
-        textArea.setSelectedTextColor(Color.RED);
+        textArea.setSelectedTextColor(Color.BLUE);
+        textArea.setAlignmentX(Component.CENTER_ALIGNMENT);
         lrcPanel.setLayout(new BorderLayout());
+        slider.setUI(new MySliderUI(slider));
         sliderPanel.add(leftLabel, BorderLayout.WEST);
         sliderPanel.add(slider, BorderLayout.CENTER);
         sliderPanel.add(rightLabel, BorderLayout.EAST);
@@ -142,9 +144,68 @@ public class MusicPlayer implements ActionListener {
 
     /**
      * 进度条面板
+     * JButton 实现了普通的三态外加选中、禁用状态，有很多方法可以设置，不要自己去写鼠标监听器。
+     *
+     * setBorderPainted(boolean b)	//是否画边框，如果用自定义图片做按钮背景可以设为 false。
+     *
+     * setContentAreaFilled(boolean b)	//是否填充，如果你的自定义图片不是矩形或存在空白边距，可以设为 false 使按钮看起来透明。
+     *
+     * setFocusPainted(boolean b)	//是否绘制焦点（例如浅色虚线框或者加粗的边框表明按钮当前有焦点）。
+     *
+     * setMargin(Insets m)	//改变边距，如果 borderPainted 和 contentAreaFilled 都设成了 false，建议把边距都调为 0：new Insets(0, 0, 0, 0)。
+     *
+     * setIcon(Icon defaultIcon)	//注意了这是改的默认图标。三态中的默认，即鼠标未在其上的时候。
+     *
+     * setPressedIcon(Icon pressedIcon)	//按下时的图标。
+     *
+     * setRolloverIcon(Icon rolloverIcon)	//鼠标经过时的图标。
+     *
+     * setRolloverSelectedIcon(Icon rolloverSelectedIcon)	//鼠标经过时且被选中状态的图标。
+     *
+     * setSelectedIcon(Icon selectedIcon)	//选中时的图标。
+     *
+     * setDisabledIcon(Icon disabledIcon)	//禁用时显示的图标。例如可以换一张灰度图片。
+     *
+     * setDisabledSelectedIcon(Icon disabledSelectedIcon)	//禁用且被选中状态的图标。
      */
+    public void setButton(JButton button, String pic, String press, String roll) {
+        setPic(button, pic, press, roll);
+        button.setPreferredSize(new Dimension(85, 25));
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setOpaque(false);
+        button.setMargin(new Insets(2, 2, 2, 2));
+        button.setHorizontalTextPosition(SwingConstants.CENTER);
+    }
+
+    private void setPic(JButton button, String pic, String pressPic, String rollPic) {
+        URL resource = MusicPlayer.class.getClassLoader().getResource(pic);
+        assert resource != null;
+        ImageIcon image = new ImageIcon(resource);
+        URL pressPicResource = MusicPlayer.class.getClassLoader().getResource(pressPic);
+        assert pressPicResource != null;
+        ImageIcon pressPicImage = new ImageIcon(pressPicResource);
+        URL rollPicResource = MusicPlayer.class.getClassLoader().getResource(rollPic);
+        assert rollPicResource != null;
+        ImageIcon rollPicImage = new ImageIcon(rollPicResource);
+        button.setIcon(image);
+        button.setPressedIcon(pressPicImage);
+        button.setRolloverIcon(rollPicImage);
+    }
+
+
     private JPanel controlPanel() {
         JPanel controlPanel = new JPanel();
+        setButton(play, "default.png", "press.png", "put.png");
+        setButton(previous, "default.png", "press.png", "put.png");
+        setButton(next, "default.png", "press.png", "put.png");
+        setButton(stop, "default.png", "press.png", "put.png");
+        setButton(input, "default.png", "press.png", "put.png");
+        setButton(delete, "default.png", "press.png", "put.png");
+        setButton(deleteFile, "default.png", "press.png", "put.png");
+        modeBox.setBackground(new Color(255, 255, 255));
+        modeBox.setPreferredSize(new Dimension(85, 25));
+        modeBox.setOpaque(false);
         buttonPanel.setLayout(new GridLayout(2, 2));
         buttonPanel.add(previous);
         buttonPanel.add(play);
@@ -152,9 +213,9 @@ public class MusicPlayer implements ActionListener {
         buttonPanel.add(stop);
         buttonPanel.add(input);
         buttonPanel.add(modeBox);
-        buttonPanel.add(delete);//deleteFile
+        buttonPanel.add(delete);
         buttonPanel.add(deleteFile);
-        controlPanel.add(buttonPanel, BorderLayout.CENTER);
+        controlPanel.add(buttonPanel, BorderLayout.NORTH);
         return controlPanel;
     }
 
@@ -186,7 +247,7 @@ public class MusicPlayer implements ActionListener {
                 if (e.getClickCount() == 2) {
                     stop();
                     int selectedIndex = jList.getSelectedIndex();
-                    if (index==selectedIndex){
+                    if (index == selectedIndex) {
                         return;
                     }
                     needturn = false;
@@ -222,7 +283,7 @@ public class MusicPlayer implements ActionListener {
         }
     }
 
-    private int getSize(){
+    private int getSize() {
         return jList.getModel().getSize();
     }
 
@@ -251,7 +312,7 @@ public class MusicPlayer implements ActionListener {
                 choose2Play();
                 break;
             case "上一首":
-                if (thread == null ||  getSize()  == 0) {
+                if (thread == null || getSize() == 0) {
                     return;
                 }
                 previous();
@@ -280,17 +341,31 @@ public class MusicPlayer implements ActionListener {
     private void deleteSong() {
         DefaultListModel<String> listModel = (DefaultListModel<String>) jList.getModel();
         int index = jList.getSelectedIndex();
-        String name = ((DefaultListModel<String>) jList.getModel()).get(jList.getSelectedIndex());
+        if (index == -1) {
+            return;
+        }
+        String name = listModel.get(jList.getSelectedIndex());
+        if (name == null) {
+            return;
+        }
         listModel.remove(index);
-        jList.setSelectedIndex(index);
+        if (index == listModel.size()) {
+            jList.setSelectedIndex(index - 1);
+        } else {
+            jList.setSelectedIndex(index);
+        }
         songPathMap.remove(name); //歌曲
         lrcPathMap.remove(name);//歌词
     }
 
     private void deleteFile() {
         DefaultListModel<String> listModel = (DefaultListModel<String>) jList.getModel();
-        String name = ((DefaultListModel<String>) jList.getModel()).get(jList.getSelectedIndex());
-        if (name.equals(getName())){
+        int index = jList.getSelectedIndex();
+        if (index == -1) {
+            return;
+        }
+        String name = listModel.get(index);
+        if (name == null || name.equals(getName())) {
             return;
         }
         listModel.remove(jList.getSelectedIndex());
@@ -309,10 +384,10 @@ public class MusicPlayer implements ActionListener {
             return;
         }
         int index = (int) (Math.random() * getSize());
-        if (this.index==index){
+        if (this.index == index) {
             return;
         }
-        this.index=index;
+        this.index = index;
         playFile(getName());
         song.setText(getName());
     }
@@ -325,6 +400,9 @@ public class MusicPlayer implements ActionListener {
         time.stop();
         player.close();
         play.setText("播放");
+        rightLabel.setText(Utils.secToTime(0));
+        song.setText("");
+        textArea.setText("");
     }
 
     private void pause() {
@@ -345,8 +423,8 @@ public class MusicPlayer implements ActionListener {
             lrcMap.clear();
         }
         JScrollBar jscrollBar = scrollPaneList.getVerticalScrollBar();
-        if (jscrollBar != null&&needturn) {
-            jscrollBar.setValue((index-3)*20);
+        if (jscrollBar != null && needturn) {
+            jscrollBar.setValue((index - 3) * 20);
         }
         try {
             player = new Player(new FileInputStream(songPathMap.get(musicName)));
@@ -357,7 +435,7 @@ public class MusicPlayer implements ActionListener {
                 lrcMap = Utils.readLRC(path);
                 textArea.append(Utils.getHeader(lrcMap));
             }
-        } catch (JavaLayerException | FileNotFoundException  e) {
+        } catch (JavaLayerException | FileNotFoundException e) {
             e.printStackTrace();
         } finally {
             play();
@@ -400,16 +478,16 @@ public class MusicPlayer implements ActionListener {
         ((ScheduledExecutorService) serviceLRC).scheduleAtFixedRate(() -> {
             if (!player.isComplete()) {
                 int second = player.getPosition() / 1000 + 1; //获得当前的时间
-                if ( second <= this.second) {
+                if (second <= this.second) {
                     return;
                 }
                 String lrc = lrcMap.get(second); //当前时间对应的歌词
-                if (lastLrc.equals(lrc)){
+                if (lastLrc.equals(lrc)) {
                     return;
                 }
                 if (lrc != null) {
                     System.out.println(lrc);
-                    textArea.append("\t");
+                    textArea.append("\t     ");
                     textArea.append(lrc);
                     textArea.append(NEWLINE);
                     this.second = second;
@@ -442,9 +520,10 @@ public class MusicPlayer implements ActionListener {
         }
     }
 
-    private String getName(){
+    private String getName() {
         return jList.getModel().getElementAt(index);
     }
+
     private void next() {
         thread.stop();
         time.stop();
@@ -462,7 +541,7 @@ public class MusicPlayer implements ActionListener {
         if (index > 0) {
             index -= 1;
         } else {
-            index =getSize() - 1;
+            index = getSize() - 1;
         }
         playFile(getName());
     }
