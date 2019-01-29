@@ -1,4 +1,4 @@
-package main.java.music;
+package main.music2;
 import java.awt.*;
 
 import javax.swing.*;
