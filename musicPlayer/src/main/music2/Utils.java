@@ -1,4 +1,4 @@
-package main.java.music;
+package main.music2;
 
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.mp3.MP3AudioHeader;
@@ -226,6 +226,55 @@ public class Utils {
         }
         return map;
     }
+
+    public static Map<Integer, Integer> readLRC(String path, JList<String> list) {
+        DefaultListModel<String> listModel = (DefaultListModel<String>) list.getModel();
+        BufferedReader reader = null;
+        Map<Integer, Integer> map = null;
+        try {
+            reader = new BufferedReader(new FileReader(path));
+            String str;
+            map = new HashMap<>();
+            int index = 0;
+            while ((str = reader.readLine()) != null) {
+                if (str.contains("[") && str.contains("]")) {
+                    String[] s = str.split(":");
+                    if (str.contains("ti")) {
+                        listModel.add(index,s[1].replace("]", ""));
+                        map.put("ti".hashCode(), index++);
+                    } else if (str.contains("ar")) {
+                        listModel.add(index,s[1].replace("]", ""));
+                        map.put("ar".hashCode(), index++);
+                    } else if (str.contains("al")) {
+                    } else if (str.contains("by")) {
+                    } else if (str.contains("offset")) {
+                    }else {
+                        String[] s1 = str.split("\\.");
+                        String time = s1[0].replace("[", "");
+                        String[] s2 = s1[1].split("]");
+                        String lrc = s2.length > 1 ? s2[1] : "";
+                        if (lrc.isEmpty()) {
+                            continue;
+                        }
+                        listModel.add(index,lrc);
+                        map.put(parseTime(time), index++);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return map;
+    }
+
 
     public static boolean deleteSong(String name) {
         File file = new File(name);
