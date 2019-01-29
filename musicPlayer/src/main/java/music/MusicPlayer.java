@@ -55,7 +55,6 @@ public class MusicPlayer implements ActionListener {
     private int index = -1;//当前播放的音乐索引
     private Map<String, String> songPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private Map<String, String> lrcPathMap = new HashMap<>(); //歌曲名称和路径的键值对
-    private boolean changed = false; //列表是否改变
     private java.util.List<String> saveList; //路径保存的列表
     private Map<Integer, String> lrcMap;
     private boolean needturn = true;
@@ -90,7 +89,7 @@ public class MusicPlayer implements ActionListener {
         lrcFrame.setIconImage(image.getImage());
         lrcFrame.setBounds(400, 900, 1000, 60);
         lrcLabel.setForeground(new Color(31, 217, 224));
-        lrcLabel.setFont(new Font("微软雅黑", Font.PLAIN, 36));
+        lrcLabel.setFont(new Font("微软雅黑", Font.PLAIN, 38));
         lrcFrame.add(lrcLabel);
         lrcFrame.setUndecorated(true);
         lrcFrame.setBackground(new Color(0, 0, 0, 0));
@@ -289,7 +288,7 @@ public class MusicPlayer implements ActionListener {
                     lrcLabel.setText(index);
                 }
             }
-        }, 1, 1, TimeUnit.SECONDS);
+        }, 1000, 500, TimeUnit.MILLISECONDS);
     }
 
     private void listener() {
@@ -330,9 +329,8 @@ public class MusicPlayer implements ActionListener {
 
     private void saveSong() {
         //保存数据
-        if (jList.getVisibleRowCount() > 0 && changed) {
+        if (jList.getVisibleRowCount() > 0) {
             Utils.save(saveList);
-            changed = false;
         }
     }
 
@@ -372,14 +370,13 @@ public class MusicPlayer implements ActionListener {
                 break;
             case "导入":
                 String LOCATION = Utils.open();
-                if (LOCATION == null) {
+                if (LOCATION == null||saveList==null) {
                     return;
                 }
                 if (!saveList.contains(LOCATION)) {
                     saveList.add(LOCATION);
                 }
                 Utils.findAll(list, LOCATION, songPathMap, lrcPathMap);
-                changed = true;
                 saveSong();
                 break;
             case "删除":
