@@ -1,5 +1,7 @@
 package main.java.music;
 
+import com.sun.awt.AWTUtilities;
+
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.Player;
 
@@ -32,10 +34,10 @@ public class MusicPlayer implements ActionListener {
     private JButton previous = new JButton("上一首");
     private JButton delete = new JButton("删除");
     private JButton deleteFile = new JButton("删除文件");
+    private JButton lrcButton = new JButton("歌词");
     //面板
     private JPanel buttonPanel = new JPanel(); //按钮面板
     private JPanel sliderPanel = new JPanel();//进度条面板
-    //    private JPanel textPanel = new JPanel();
     private String[] modeName = {"顺序播放", "单曲循环", "随机播放"};
     private JComboBox<String> modeBox = new JComboBox<>(modeName);
     //进度条
@@ -50,13 +52,11 @@ public class MusicPlayer implements ActionListener {
     private Player player; //播放器
     private Thread thread; //播放线程
     private Thread time; //时间线程
-    private int index;//当前播放的音乐索引
-    private int second; //歌词时间
+    private int index = -1;//当前播放的音乐索引
     private Map<String, String> songPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private Map<String, String> lrcPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private boolean changed = false; //列表是否改变
     private java.util.List<String> saveList; //路径保存的列表
-    private int totalTime; //当前歌曲总时间
     private Map<Integer, Integer> lrcMapInt;
     private boolean needturn = true;
     //下方代码为测试
@@ -64,7 +64,12 @@ public class MusicPlayer implements ActionListener {
     //文字域
     private JList<String> lrcList = new JList<>(lrc);
     private JScrollPane lrcScrollPaneList;
+    final String LOCK = "LOCK";
     ScheduledExecutorService serviceLRC = Executors.newSingleThreadScheduledExecutor();
+    JFrame lrcframe;
+    boolean lrcframebool = false;
+    Point lrcXY = new Point();
+    JLabel lrcLabel = new JLabel("透明窗口",JLabel.CENTER);
     public MusicPlayer() {
         init();//初始化
         listener();//监听
@@ -80,6 +85,40 @@ public class MusicPlayer implements ActionListener {
         mainFrame();
     }
 
+    public JFrame createLrcFrame() {
+        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.jpg");
+        assert resource != null;
+        ImageIcon image = new ImageIcon(resource);
+        JFrame lrcFrame = new JFrame("歌词");
+        lrcFrame.setIconImage(image.getImage());
+        lrcFrame.setBounds(400, 900, 1000, 60);
+        lrcLabel.setForeground(new Color(255, 76, 95));
+        lrcLabel.setFont(new Font("微软雅黑", Font.PLAIN, 36));
+        lrcFrame.add(lrcLabel);
+        lrcFrame.setUndecorated(true);
+//        lrcFrame.setOpacity(0.5f);
+        lrcFrame.setBackground(new Color(0,0,0,0));
+        lrcFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        lrcFrame.setVisible(false);
+        lrcFrame.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                lrcXY.x = e.getX();
+                lrcXY.y = e.getY();
+            }
+        });
+        lrcFrame.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                Point p = lrcFrame.getLocation();
+                // 设置窗口的位置
+                // 窗口当前的位置 + 鼠标当前在窗口的位置 - 鼠标按下的时候在窗口的位置
+                lrcFrame.setLocation(p.x + e.getX() - lrcXY.x, p.y + e.getY() - lrcXY.y);
+            }
+        });
+        return lrcFrame;
+    }
+
     /**
      * 主面板
      */
@@ -88,12 +127,13 @@ public class MusicPlayer implements ActionListener {
         assert resource != null;
         ImageIcon image = new ImageIcon(resource);
         frame.setIconImage(image.getImage());
-        frame.setBounds(400, 200, 400, 550);
+        frame.setBounds(400, 200, 450, 300);
         frame.add(listPanel(), BorderLayout.NORTH);
         frame.add(lrcPanel(), BorderLayout.CENTER);
         frame.add(controlPanel(), BorderLayout.SOUTH);
         frame.setResizable(false);
         frame.setVisible(true);
+        lrcframe = createLrcFrame();
     }
 
 
@@ -105,11 +145,11 @@ public class MusicPlayer implements ActionListener {
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         JPanel listPanel = new JPanel();
         listPanel.add(scrollPaneList, BorderLayout.SOUTH);
-        jList.setFixedCellWidth(410);
+        jList.setFixedCellWidth(460);
         DefaultListCellRenderer renderer = new DefaultListCellRenderer();
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
         jList.setCellRenderer(renderer);
-        jList.setSelectionBackground(new Color(135, 206, 250));
+        jList.setSelectionBackground(new Color(255, 76, 95));
         jList.setFont(new Font("微软雅黑", Font.BOLD, 14));
         jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         jList.setValueIsAdjusting(true);
@@ -125,13 +165,6 @@ public class MusicPlayer implements ActionListener {
         namePanel.add(song);
         song.setFont(new Font("微软雅黑", Font.PLAIN, 20));
         song.setForeground(new Color(255, 76, 95));
- /*     textArea.setForeground(Color.BLACK);
-        textPanel.add(scrollPane);
-        textPanel.setOpaque(false);
-        textArea.setFont(new Font("微软雅黑", Font.PLAIN, 16));   // 设置字体
-        textArea.setEditable(false);
-        textArea.setSelectedTextColor(Color.BLUE);
-        textArea.setAlignmentX(Component.CENTER_ALIGNMENT);*/
         lrcPanel.setLayout(new BorderLayout());
         slider.setUI(new MySliderUI(slider));
         sliderPanel.add(leftLabel, BorderLayout.WEST);
@@ -139,7 +172,7 @@ public class MusicPlayer implements ActionListener {
         sliderPanel.add(rightLabel, BorderLayout.EAST);
         lrcPanel.add(namePanel, BorderLayout.NORTH);
         lrcPanel.add(newLrcPanel(), BorderLayout.CENTER);
-        lrcPanel.add(sliderPanel, BorderLayout.SOUTH);
+        lrcPanel.add(sliderPanel, BorderLayout.CENTER);
         return lrcPanel;
     }
 
@@ -204,6 +237,7 @@ public class MusicPlayer implements ActionListener {
         setButton(input, "default.png", "press.png", "put.png");
         setButton(delete, "default.png", "press.png", "put.png");
         setButton(deleteFile, "default.png", "press.png", "put.png");
+        setButton(lrcButton, "default.png", "press.png", "put.png");
         modeBox.setBackground(new Color(255, 255, 255));
         modeBox.setPreferredSize(new Dimension(85, 25));
         modeBox.setOpaque(false);
@@ -216,6 +250,7 @@ public class MusicPlayer implements ActionListener {
         buttonPanel.add(modeBox);
         buttonPanel.add(delete);
         buttonPanel.add(deleteFile);
+        buttonPanel.add(lrcButton);
         controlPanel.add(buttonPanel, BorderLayout.SOUTH);
         return controlPanel;
     }
@@ -232,7 +267,7 @@ public class MusicPlayer implements ActionListener {
         lrcList.setCellRenderer(renderer);
         lrcList.setSelectionBackground(new Color(64, 224, 208));
         lrcList.setFont(new Font("微软雅黑", Font.PLAIN, 16));
-        lrcList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        lrcList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         lrcList.setValueIsAdjusting(true);
         return pane;
     }
@@ -256,6 +291,24 @@ public class MusicPlayer implements ActionListener {
                 choose2Play();
             }
         }, 1, 3, TimeUnit.SECONDS);
+        serviceLRC.scheduleAtFixedRate(() -> {
+            if (player == null || lrcMapInt == null || lrcMapInt.isEmpty() ||
+                    getLrcList().isEmpty()) {
+                return;
+            }
+            if (!player.isComplete()) {
+                int second = player.getPosition() / 1000 + 1; //获得当前的时间
+                Integer index = lrcMapInt.get(second);
+                if (index != null) {
+                    lrcList.setSelectedIndex(index);
+                    lrcLabel.setText(lrcList.getModel().getElementAt(index));
+                    JScrollBar jscrollBar = lrcScrollPaneList.getVerticalScrollBar();
+                    if (jscrollBar != null && needturn) {
+                        jscrollBar.setValue((index - 4) * 24);
+                    }
+                }
+            }
+        }, 1, 1, TimeUnit.SECONDS);
     }
 
     private void listener() {
@@ -285,6 +338,7 @@ public class MusicPlayer implements ActionListener {
         deleteFile.addActionListener(this);
         play.addActionListener(this);
         stop.addActionListener(this);
+        lrcButton.addActionListener(this);
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -352,6 +406,10 @@ public class MusicPlayer implements ActionListener {
                 break;
             case "删除文件":
                 deleteFile();
+                break;
+            case "歌词":
+                lrcframebool = !lrcframebool;
+                lrcframe.setVisible(lrcframebool);
                 break;
         }
     }
@@ -443,26 +501,33 @@ public class MusicPlayer implements ActionListener {
         }
         if (lrcMapInt != null) {
             lrcMapInt.clear();
+
         }
         getLrcList().clear();
+        lrcLabel.setText("");
         JScrollBar jscrollBar = scrollPaneList.getVerticalScrollBar();
         if (jscrollBar != null && needturn) {
             jscrollBar.setValue((index - 3) * 21);
         }
+        jList.setSelectedIndex(index);
+        String path = lrcPathMap.get(musicName);
+        if (path != null) {
+            lrcMapInt = Utils.readLRC(path, lrcList);
+        }
         try {
             player = new Player(new FileInputStream(songPathMap.get(musicName)));
-            totalTime = Utils.getMp3Time(songPathMap.get(musicName));
-            String path = lrcPathMap.get(musicName);
-            jList.setSelectedIndex(index);
-            if (path != null) {
-                lrcMapInt = Utils.readLRC(path, lrcList);
-            }
+            int totalTime = Utils.getMp3Time(songPathMap.get(musicName));
+            slider.setMinimum(0);
+            slider.setMaximum(totalTime);
+            rightLabel.setText(Utils.secToTime(totalTime));
         } catch (JavaLayerException | FileNotFoundException e) {
             e.printStackTrace();
         } finally {
-            play();
-            play.setText("暂停");
-            song.setText(musicName);
+            synchronized (LOCK) {
+                play();
+                play.setText("暂停");
+                song.setText(musicName);
+            }
         }
 
     }
@@ -478,13 +543,6 @@ public class MusicPlayer implements ActionListener {
             }
         });
         thread.start();
-        //进度条初始值
-        int start = 0;
-        //进度条最大值
-        int end = totalTime;
-        slider.setMinimum(start);
-        slider.setMaximum(end);
-        rightLabel.setText(Utils.secToTime(totalTime));
         time = new Thread(() -> {
             while (!player.isComplete()) {
                 leftLabel.setText(Utils.secToTime(player.getPosition() / 1000));
@@ -492,23 +550,6 @@ public class MusicPlayer implements ActionListener {
             }
         });
         time.start();
-        this.second = 0;
-        serviceLRC.scheduleAtFixedRate(() -> {
-            if (!player.isComplete()) {
-                int second = player.getPosition() / 1000 + 1; //获得当前的时间
-                if (second <= this.second) {
-                    return;
-                }
-                Integer index = lrcMapInt.get(second);
-                if (index != null) {
-                    lrcList.setSelectedIndex(index);
-                    JScrollBar jscrollBar = lrcScrollPaneList.getVerticalScrollBar();
-                    if (jscrollBar != null && needturn) {
-                        jscrollBar.setValue((index - 4) * 24);
-                    }
-                }
-            }
-        }, 1, 1, TimeUnit.SECONDS);
     }
 
     private void choose2Play() {
