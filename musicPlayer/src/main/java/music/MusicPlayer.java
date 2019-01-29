@@ -1,7 +1,5 @@
 package main.java.music;
 
-import com.sun.awt.AWTUtilities;
-
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.Player;
 
@@ -51,20 +49,16 @@ public class MusicPlayer implements ActionListener {
 
     private Player player; //播放器
     private Thread thread; //播放线程
-    private Thread time; //时间线程
     private int index = -1;//当前播放的音乐索引
     private Map<String, String> songPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private Map<String, String> lrcPathMap = new HashMap<>(); //歌曲名称和路径的键值对
     private java.util.List<String> saveList; //路径保存的列表
     private Map<Integer, String> lrcMap;
-    private boolean needturn = true;
-
-    final String LOCK = "LOCK";
-    ScheduledExecutorService serviceLRC = Executors.newSingleThreadScheduledExecutor();
-    JFrame lrcframe;
-    boolean lrcframebool = false;
-    Point lrcXY = new Point();
-    JLabel lrcLabel = new JLabel("透明窗口", JLabel.CENTER);
+    private boolean needTurn = true;
+    private JFrame lrcFrame;
+    private boolean lrcFramebool = false;
+    private Point lrcXY = new Point();
+    private JLabel lrcLabel = new JLabel("透明窗口", JLabel.CENTER);
 
     public MusicPlayer() {
         init();//初始化
@@ -137,7 +131,7 @@ public class MusicPlayer implements ActionListener {
         frame.add(controlPanel(), BorderLayout.SOUTH);
         frame.setResizable(false);
         frame.setVisible(true);
-        lrcframe = createLrcFrame();
+        lrcFrame = createLrcFrame();
     }
 
 
@@ -205,7 +199,7 @@ public class MusicPlayer implements ActionListener {
      *
      * setDisabledSelectedIcon(Icon disabledSelectedIcon)	//禁用且被选中状态的图标。
      */
-    public void setButton(JButton button, String pic, String press, String roll) {
+    private void setButton(JButton button, String pic, String press, String roll) {
         setPic(button, pic, press, roll);
         button.setPreferredSize(new Dimension(85, 25));
         button.setBorderPainted(false);
@@ -272,6 +266,7 @@ public class MusicPlayer implements ActionListener {
 
     private void autoPlay() {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(); //监听歌曲线程
+        ScheduledExecutorService serviceLRC = Executors.newSingleThreadScheduledExecutor();//歌词和时间线程
         service.scheduleAtFixedRate(() -> {
             if (player != null && player.isComplete()) {
                 choose2Play();
@@ -287,6 +282,8 @@ public class MusicPlayer implements ActionListener {
                 if (index != null) {
                     lrcLabel.setText(index);
                 }
+                leftLabel.setText(Utils.secToTime(player.getPosition() / 1000));
+                slider.setValue(player.getPosition() / 1000);
             }
         }, 1000, 500, TimeUnit.MILLISECONDS);
     }
@@ -301,9 +298,9 @@ public class MusicPlayer implements ActionListener {
                     if (index == selectedIndex) {
                         return;
                     }
-                    needturn = false;
+                    needTurn = false;
                     playFile(jList.getSelectedValue());
-                    needturn = true;
+                    needTurn = true;
                     index = selectedIndex;
                     jList.setSelectedIndex(index);
                 }
@@ -350,7 +347,6 @@ public class MusicPlayer implements ActionListener {
                     return;
                 }
                 thread.resume();
-                time.resume();
                 play.setText("暂停");
                 break;
             case "暂停":
@@ -386,8 +382,8 @@ public class MusicPlayer implements ActionListener {
                 deleteFile();
                 break;
             case "歌词":
-                lrcframebool = !lrcframebool;
-                lrcframe.setVisible(lrcframebool);
+                lrcFramebool = !lrcFramebool;
+                lrcFrame.setVisible(lrcFramebool);
                 break;
         }
     }
@@ -452,7 +448,6 @@ public class MusicPlayer implements ActionListener {
             return;
         }
         thread.stop();
-        time.stop();
         player.close();
         play.setText("播放");
         rightLabel.setText(Utils.secToTime(0));
@@ -460,11 +455,10 @@ public class MusicPlayer implements ActionListener {
     }
 
     private void pause() {
-        if (thread == null || time == null) {
+        if (thread == null/* || time == null*/) {
             return;
         }
         thread.suspend();
-        time.suspend();
         play.setText("播放");
     }
 
@@ -477,7 +471,7 @@ public class MusicPlayer implements ActionListener {
         }
         lrcLabel.setText(musicName);
         JScrollBar jscrollBar = scrollPaneList.getVerticalScrollBar();
-        if (jscrollBar != null && needturn) {
+        if (jscrollBar != null && needTurn) {
             jscrollBar.setValue((index - 3) * 21);
         }
         jList.setSelectedIndex(index);
@@ -494,6 +488,7 @@ public class MusicPlayer implements ActionListener {
         } catch (JavaLayerException | FileNotFoundException e) {
             e.printStackTrace();
         } finally {
+            String LOCK = "LOCK";
             synchronized (LOCK) {
                 play();
                 play.setText("暂停");
@@ -514,13 +509,6 @@ public class MusicPlayer implements ActionListener {
             }
         });
         thread.start();
-        time = new Thread(() -> {
-            while (!player.isComplete()) {
-                leftLabel.setText(Utils.secToTime(player.getPosition() / 1000));
-                slider.setValue(player.getPosition() / 1000);
-            }
-        });
-        time.start();
     }
 
     private void choose2Play() {
@@ -543,7 +531,6 @@ public class MusicPlayer implements ActionListener {
 
     private void next() {
         thread.stop();
-        time.stop();
         if (index < getSize() - 1) {
             index += 1;
         } else {
@@ -554,7 +541,6 @@ public class MusicPlayer implements ActionListener {
 
     private void previous() {
         thread.stop();
-        time.stop();
         if (index > 0) {
             index -= 1;
         } else {
