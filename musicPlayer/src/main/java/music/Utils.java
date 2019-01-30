@@ -191,24 +191,21 @@ public class Utils {
             while ((str = reader.readLine()) != null) {
                 if (str.contains("[") && str.contains("]")) {
                     String[] s = str.split(":");
-                    if (str.contains("ti")) {
+                    if (s[0].equals("[ti")) {
                         map.put("ti".hashCode(), s[1].replace("]", ""));
-                    } else if (str.contains("ar")) {
+                    } else if (s[0].equals("[ar")) {
                         map.put("ar".hashCode(), s[1].replace("]", ""));
-                    } else if (str.contains("al")) {
+                    } else if (s[0].equals("[al")) {
                         map.put("al".hashCode(), s[1].replace("]", ""));
-                    } else if (str.contains("by")) {
+                    } else if (s[0].equals("[by")) {
                         map.put("by".hashCode(), s[1].replace("]", ""));
-                    } else if (str.contains("offset")) {
+                    } else if (s[0].equals("[offset")) {
                         map.put("offset".hashCode(), s[1].replace("]", ""));
                     } else {
                         String[] s1 = str.split("\\.");
                         String time = s1[0].replace("[", "");
                         String[] s2 = s1[1].split("]");
                         String lrc = s2.length > 1 ? s2[1] : "";
-             /*           if (lrc.isEmpty()) {
-                            continue;
-                        }*/
                         map.put(parseTime(time), lrc);
                     }
                 }
