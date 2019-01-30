@@ -1,7 +1,5 @@
 package main.java.music;
 
-import com.sun.org.apache.bcel.internal.generic.IF_ACMPEQ;
-
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.AudioDevice;
 import javazoom.jl.player.JavaSoundAudioDevice;
@@ -128,7 +126,7 @@ public class MusicPlayer implements ActionListener {
      */
     private void mainFrame() {
         frame = new JFrame("GFMusic");
-        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.jpg");
+        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.png");
         assert resource != null;
         ImageIcon image = new ImageIcon(resource);
         frame.setIconImage(image.getImage());
@@ -154,7 +152,7 @@ public class MusicPlayer implements ActionListener {
         DefaultListCellRenderer renderer = new DefaultListCellRenderer();
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
         jList.setCellRenderer(renderer);
-        jList.setSelectionBackground(new Color(64, 224, 208));
+        jList.setSelectionBackground(new Color(255, 128, 128));
         jList.setFont(new Font("微软雅黑", Font.BOLD, 14));
         jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         jList.setValueIsAdjusting(true);
@@ -170,7 +168,7 @@ public class MusicPlayer implements ActionListener {
         song = new JLabel("歌曲");
         namePanel.add(song);
         song.setFont(new Font("微软雅黑", Font.PLAIN, 20));
-        song.setForeground(new Color(255, 76, 95));
+        song.setForeground(new Color(255, 128, 128));
         lrcPanel.setLayout(new BorderLayout());
         slider = new JSlider();
         leftLabel = new JLabel(Utils.secToTime(0));
@@ -309,7 +307,7 @@ public class MusicPlayer implements ActionListener {
                 return;
             }
             if (!isComplete()) {
-                int second = getPosition() / 1000 + 1; //获得当前的时间
+                int second = getPosition() / 1000; //获得当前的时间
                 String index = lrcMap.get(second);
                 if (index != null) {
                     lrcLabel.setText(index);
@@ -318,7 +316,7 @@ public class MusicPlayer implements ActionListener {
                 leftLabel.setText(Utils.secToTime(position));
                 slider.setValue(position);
             }
-        }, 1000, 500, TimeUnit.MILLISECONDS);
+        }, 1000, 100, TimeUnit.MILLISECONDS);
     }
 
     private int getPosition() {
