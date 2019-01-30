@@ -206,9 +206,9 @@ public class Utils {
                         String time = s1[0].replace("[", "");
                         String[] s2 = s1[1].split("]");
                         String lrc = s2.length > 1 ? s2[1] : "";
-                        if (lrc.isEmpty()) {
+             /*           if (lrc.isEmpty()) {
                             continue;
-                        }
+                        }*/
                         map.put(parseTime(time), lrc);
                     }
                 }

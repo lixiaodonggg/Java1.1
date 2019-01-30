@@ -69,9 +69,9 @@ public class MusicPlayer implements ActionListener {
     }
 
     private void init() {
-        loadSong();
-        autoPlay();
-        mainFrame();
+        loadSong(); //加载歌曲列表
+        autoPlay(); //歌曲监听
+        mainFrame();//主界面加载
     }
 
     private JFrame createLrcFrame() {
@@ -100,8 +100,7 @@ public class MusicPlayer implements ActionListener {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
-                    Color color =
-                            JColorChooser.showDialog(frame, "选择字体颜色", new Color(31, 217, 224));
+                    Color color = JColorChooser.showDialog(frame, "选择颜色", new Color(31, 217, 224));
                     lrcLabel.setForeground(color);
                 }
             }
@@ -134,11 +133,11 @@ public class MusicPlayer implements ActionListener {
         ImageIcon image = new ImageIcon(resource);
         frame.setIconImage(image.getImage());
         frame.setBounds(700, 300, 340, 360);
-        frame.add(listPanel(), BorderLayout.NORTH);
-        frame.add(lrcPanel(), BorderLayout.CENTER);
-        frame.add(controlPanel(), BorderLayout.SOUTH);
+        frame.add(listPanel(), BorderLayout.NORTH); //歌曲列表面板
+        frame.add(sliderPanel(), BorderLayout.CENTER);//滑动条面板
+        frame.add(controlPanel(), BorderLayout.SOUTH);//按钮面板
         frame.setResizable(false);
-        lrcFrame = createLrcFrame();
+        lrcFrame = createLrcFrame(); //歌词面板
         frame.setVisible(true);
     }
 
@@ -163,9 +162,9 @@ public class MusicPlayer implements ActionListener {
     }
 
     /**
-     * 歌词面板
+     * 滑动条面板
      */
-    private JPanel lrcPanel() {
+    private JPanel sliderPanel() {
         JPanel lrcPanel = new JPanel(); //歌词面板
         JPanel namePanel = new JPanel();//歌曲名字面板
         song = new JLabel("歌曲");
@@ -242,8 +241,6 @@ public class MusicPlayer implements ActionListener {
     private JPanel controlPanel() {
         buttonBoxInit();
         JPanel controlPanel = new JPanel();
-        //面板
-        //按钮面板
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new GridLayout(3, 3));
         buttonPanel.add(previous);
@@ -337,7 +334,6 @@ public class MusicPlayer implements ActionListener {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
-                    stop();
                     int selectedIndex = jList.getSelectedIndex();
                     if (index == selectedIndex) {
                         return;
@@ -383,11 +379,17 @@ public class MusicPlayer implements ActionListener {
             case "播放":
                 if (player == null) {
                     index = jList.getSelectedIndex();
+                    if (index == -1) {
+                        return;
+                    }
                     playFile(getName());
 
                 } else {
                     if (!changeSong) {
                         index = jList.getSelectedIndex();
+                        if (index == -1) {
+                            return;
+                        }
                         playFile(getName());
                     } else {
                         this.pause = false;
@@ -553,6 +555,7 @@ public class MusicPlayer implements ActionListener {
     /**开启音乐线程*/
     private void play() {
         changeSong = true;
+        pause = false;
         thread = new Thread(() -> {
             try {
                 if (player != null) {
