@@ -567,6 +567,7 @@ public class MusicPlayer implements ActionListener {
             } catch (JavaLayerException e) {
                 e.printStackTrace();
             }
+            System.out.println(currentMusicName + "歌曲线程结束");
         });
         thread.start();
     }

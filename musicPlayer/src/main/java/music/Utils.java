@@ -49,14 +49,19 @@ public class Utils {
 
 
     private static String shortCut(String string) {
-        String cut;
         String[] str = string.split("-");
+        String musicName = "";
         if (str.length > 1) {
-            cut = str[1].substring(0, str[1].lastIndexOf(".")).trim();
+            for (String s : str) {
+                if (s.contains(".")) {
+                    musicName = s.substring(0, s.lastIndexOf(".")).trim();
+                    break;
+                }
+            }
         } else {
-            cut = str[0].substring(0, str[0].lastIndexOf(".")).trim();
+            musicName = str[0].substring(0, str[0].lastIndexOf(".")).trim();
         }
-        return cut;
+        return musicName;
     }
 
     public static String open() {
@@ -203,9 +208,17 @@ public class Utils {
                         map.put("offset".hashCode(), s[1].replace("]", ""));
                     } else {
                         String[] s1 = str.split("\\.");
-                        String time = s1[0].replace("[", "");
-                        String[] s2 = s1[1].split("]");
-                        String lrc = s2.length > 1 ? s2[1] : "";
+                        String time;
+                        String lrc;
+                        if (s1.length > 1) {
+                         time = s1[0].replace("[", "");
+                            String[] s2 = s1[1].split("]");
+                            lrc = s2.length > 1 ? s2[1] : "";
+                        } else {
+                            String[] s2 = s1[0].split("]");
+                            lrc = s2.length > 1 ? s2[1] : "";
+                            time = s2[0].replace("[", "");
+                        }
                         map.put(parseTime(time), lrc);
                     }
                 }
