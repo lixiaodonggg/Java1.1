@@ -210,7 +210,10 @@ public class MusicPlayer implements ActionListener {
      *
      * setDisabledSelectedIcon(Icon disabledSelectedIcon)	//禁用且被选中状态的图标。
      */
-    private void setButton(JButton button, String pic, String press, String roll) {
+    private void setButton(JButton button) {
+        String pic = "default.png";
+        String press = "press.png";
+        String roll = "put.png";
         setPic(button, pic, press, roll);
         button.setPreferredSize(new Dimension(85, 25));
         button.setBorderPainted(false);
@@ -263,14 +266,14 @@ public class MusicPlayer implements ActionListener {
         delete = new JButton("删除");
         deleteFile = new JButton("删除文件");
         lrcButton = new JButton("歌词:开");
-        setButton(play, "default.png", "press.png", "put.png");
-        setButton(previous, "default.png", "press.png", "put.png");
-        setButton(next, "default.png", "press.png", "put.png");
-        setButton(stop, "default.png", "press.png", "put.png");
-        setButton(input, "default.png", "press.png", "put.png");
-        setButton(delete, "default.png", "press.png", "put.png");
-        setButton(deleteFile, "default.png", "press.png", "put.png");
-        setButton(lrcButton, "default.png", "press.png", "put.png");
+        setButton(play);
+        setButton(previous);
+        setButton(next);
+        setButton(stop);
+        setButton(input);
+        setButton(delete);
+        setButton(deleteFile);
+        setButton(lrcButton);
         String[] modeName = {"顺序播放", "单曲循环", "随机播放"};
         modeBox = new JComboBox<>(modeName);
         modeBox.setBackground(new Color(255, 255, 255));
