@@ -4,7 +4,6 @@ import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.mp3.MP3AudioHeader;
 import org.jaudiotagger.audio.mp3.MP3File;
 
-import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,6 +13,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.*;
@@ -67,7 +67,7 @@ public class Utils {
     public static String open() {
         final JFileChooser fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        fc.showOpenDialog(new Frame());
+        fc.showOpenDialog(new JFrame());
         File path = fc.getSelectedFile();
         if (path == null) {
             return null;
@@ -75,12 +75,12 @@ public class Utils {
         return path.getAbsolutePath();
     }
 
-    public static void save(java.util.List<String> list) {
+    public static void save(List<String> list) {
         File file = new File("musicPath.txt");
         writeList(list, file);
     }
 
-    private static void writeList(java.util.List<String> list, File file) {
+    private static void writeList(List<String> list, File file) {
         try (PrintWriter out = new PrintWriter(file, "utf-8")) {
             for (String str : list) {
                 out.println(str);
@@ -211,7 +211,7 @@ public class Utils {
                         String time;
                         String lrc;
                         if (s1.length > 1) {
-                         time = s1[0].replace("[", "");
+                            time = s1[0].replace("[", "");
                             String[] s2 = s1[1].split("]");
                             lrc = s2.length > 1 ? s2[1] : "";
                         } else {
