@@ -319,7 +319,7 @@ public class MusicPlayer implements ActionListener {
                 leftLabel.setText(Utils.secToTime(position));
                 slider.setValue(position);
             }
-        }, 1000, 100, TimeUnit.MILLISECONDS);
+        }, 1000, 50, TimeUnit.MILLISECONDS);
     }
 
     private int getPosition() {
@@ -521,7 +521,7 @@ public class MusicPlayer implements ActionListener {
 
     /**播放音乐*/
     private void playFile(String musicName) {
-        stop();
+
         if (lrcMap != null) {
             lrcMap.clear();
         }
@@ -538,6 +538,7 @@ public class MusicPlayer implements ActionListener {
         currentMusicName = musicName;
         try {
             synchronized ("LOCK") {
+                stop();
                 AudioDevice device = new JavaSoundAudioDevice();
                 player = new Player(new FileInputStream(songPathMap.get(musicName)), device);
             }
