@@ -1,9 +1,11 @@
 package main.java.music;
+
 import java.awt.*;
 
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicSliderUI;
 
+/**改变进度条的样式*/
 public class MySliderUI extends BasicSliderUI {
     private static final Color BACKGROUND01 = new Color(255, 76, 95);   //new Color(0,30,255);
     private static final Color BACKGROUND02 = new Color(234, 236, 246);
@@ -26,6 +28,7 @@ public class MySliderUI extends BasicSliderUI {
         g2d.setStroke(stroke1);
         g2d.drawLine(8, thumbRect.height / 2, thumbRect.x + 8, thumbRect.height / 2);
     }
+
     @Override
     public void paintTrack(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
