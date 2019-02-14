@@ -16,6 +16,7 @@ import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -33,10 +34,9 @@ public class MusicPlayer implements ActionListener {
     private JButton previous;
     private JButton delete;
     private JButton deleteFile;
-    private JButton lrcButton;
-    private JComboBox<String> modeBox;
-    //进度条
-    private JSlider slider;
+    private JButton lrcButton; //歌词开关按钮
+    private JComboBox<String> modeBox; //模式选项
+    private JSlider slider;    //进度条
     private JLabel leftLabel;
     private JLabel rightLabel;
     private JScrollPane scrollPaneList;
@@ -44,18 +44,18 @@ public class MusicPlayer implements ActionListener {
     private JList<String> jList;
     private String currentMusicName;
     private Player player; //播放器
-    private Thread thread; //播放线程
-    private int index = -1;//当前播放的音乐索引
+    private int index;//当前播放的音乐索引
     private Map<String, String> songPathMap; //歌曲名称和路径的键值对
     private Map<String, String> lrcPathMap; //歌曲名称和路径的键值对
     private java.util.List<String> saveList; //路径保存的列表
     private Map<Integer, String> lrcMap;
-    private boolean needTurn = true;
+    private boolean needTurn;
     private JFrame lrcFrame;
-    private Point lrcXY = new Point();
+    private Point lrcXY;
     private JLabel lrcLabel;
-    private volatile boolean changeSong = true; //是否换歌
+    private volatile boolean changeSong; //是否换歌
     private volatile boolean pause; //暂停歌曲
+    private ExecutorService playThread;
 
     private MusicPlayer() {
         init();//初始化
@@ -63,15 +63,39 @@ public class MusicPlayer implements ActionListener {
     }
 
     public static void main(String[] args) {
-        new MusicPlayer();
+        MusicPlayer player = new MusicPlayer();
+        player.lrcFrame.setVisible(true);
+        for (int i = 0; i < 66; i++) {
+            player.randomPlay();
+        }
+        player.lrcFrame.setVisible(false);
     }
 
     private void init() {
         loadSong(); //加载歌曲列表
-        autoPlay(); //歌曲监听
+        playInit(); //播放线程初始化
         mainFrame();//主界面加载
     }
 
+    /**
+     * 主面板
+     */
+    private void mainFrame() {
+        frame = new JFrame("GFMusic");
+        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.png");
+        assert resource != null;
+        ImageIcon image = new ImageIcon(resource);
+        frame.setIconImage(image.getImage());
+        frame.setBounds(700, 300, 340, 360);
+        frame.add(listPanel(), BorderLayout.NORTH); //歌曲列表面板
+        frame.add(sliderPanel(), BorderLayout.CENTER);//滑动条面板
+        frame.add(controlPanel(), BorderLayout.SOUTH);//按钮面板
+        frame.setResizable(false);
+        lrcFrame = createLrcFrame(); //歌词面板
+        frame.setVisible(true);
+    }
+
+    /**歌词面板*/
     private JFrame createLrcFrame() {
         URL resource = MusicPlayer.class.getClassLoader().getResource("icon.jpg");
         assert resource != null;
@@ -79,12 +103,13 @@ public class MusicPlayer implements ActionListener {
         JFrame lrcFrame = new JFrame("歌词");
         lrcFrame.setIconImage(image.getImage());
         lrcFrame.setBounds(400, 900, 1000, 60);
-        lrcLabel = new JLabel("透明窗口", JLabel.CENTER);
-        lrcLabel.setForeground(new Color(31, 217, 224));
+        lrcLabel = new JLabel("歌词", JLabel.CENTER);
+        lrcLabel.setForeground(new Color(51, 51, 51));
         lrcLabel.setFont(new Font("微软雅黑", Font.PLAIN, 38));
         lrcFrame.add(lrcLabel);
         lrcFrame.setUndecorated(true);
         lrcFrame.setBackground(new Color(0, 0, 0, 0));
+        lrcXY = new Point();
         lrcFrame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -122,26 +147,7 @@ public class MusicPlayer implements ActionListener {
     }
 
     /**
-     * 主面板
-     */
-    private void mainFrame() {
-        frame = new JFrame("GFMusic");
-        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.png");
-        assert resource != null;
-        ImageIcon image = new ImageIcon(resource);
-        frame.setIconImage(image.getImage());
-        frame.setBounds(700, 300, 340, 360);
-        frame.add(listPanel(), BorderLayout.NORTH); //歌曲列表面板
-        frame.add(sliderPanel(), BorderLayout.CENTER);//滑动条面板
-        frame.add(controlPanel(), BorderLayout.SOUTH);//按钮面板
-        frame.setResizable(false);
-        lrcFrame = createLrcFrame(); //歌词面板
-        frame.setVisible(true);
-    }
-
-
-    /**
-     * 列表面板
+     * 歌曲列表面板
      */
     private JPanel listPanel() {
         scrollPaneList = new JScrollPane(jList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
@@ -184,32 +190,7 @@ public class MusicPlayer implements ActionListener {
         return lrcPanel;
     }
 
-    /**
-     * 进度条面板
-     * JButton 实现了普通的三态外加选中、禁用状态，有很多方法可以设置，不要自己去写鼠标监听器。
-     *
-     * setBorderPainted(boolean b)	//是否画边框，如果用自定义图片做按钮背景可以设为 false。
-     *
-     * setContentAreaFilled(boolean b)	//是否填充，如果你的自定义图片不是矩形或存在空白边距，可以设为 false 使按钮看起来透明。
-     *
-     * setFocusPainted(boolean b)	//是否绘制焦点（例如浅色虚线框或者加粗的边框表明按钮当前有焦点）。
-     *
-     * setMargin(Insets m)	//改变边距，如果 borderPainted 和 contentAreaFilled 都设成了 false，建议把边距都调为 0：new Insets(0, 0, 0, 0)。
-     *
-     * setIcon(Icon defaultIcon)	//注意了这是改的默认图标。三态中的默认，即鼠标未在其上的时候。
-     *
-     * setPressedIcon(Icon pressedIcon)	//按下时的图标。
-     *
-     * setRolloverIcon(Icon rolloverIcon)	//鼠标经过时的图标。
-     *
-     * setRolloverSelectedIcon(Icon rolloverSelectedIcon)	//鼠标经过时且被选中状态的图标。
-     *
-     * setSelectedIcon(Icon selectedIcon)	//选中时的图标。
-     *
-     * setDisabledIcon(Icon disabledIcon)	//禁用时显示的图标。例如可以换一张灰度图片。
-     *
-     * setDisabledSelectedIcon(Icon disabledSelectedIcon)	//禁用且被选中状态的图标。
-     */
+    /**按钮样式*/
     private void setButton(JButton button) {
         String pic = "default.png";
         String press = "press.png";
@@ -238,7 +219,7 @@ public class MusicPlayer implements ActionListener {
         button.setRolloverIcon(rollPicImage);
     }
 
-
+    /**按钮面板*/
     private JPanel controlPanel() {
         buttonBoxInit();
         JPanel controlPanel = new JPanel();
@@ -257,6 +238,7 @@ public class MusicPlayer implements ActionListener {
         return controlPanel;
     }
 
+    /**按钮面板*/
     private void buttonBoxInit() {
         input = new JButton("导入");
         play = new JButton("播放");
@@ -281,6 +263,7 @@ public class MusicPlayer implements ActionListener {
         modeBox.setOpaque(false);
     }
 
+    /**加载歌曲*/
     private void loadSong() {
         list = new DefaultListModel<>();
         jList = new JList<>(list);
@@ -297,16 +280,21 @@ public class MusicPlayer implements ActionListener {
         }
     }
 
-    private void autoPlay() {
+    /**播放初始化*/
+    private void playInit() {
+        index = -1; //当前播放索引初始化为-1
+        changeSong = true;//歌曲播放状态
+        needTurn = true;//列表显示标记
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(); //监听歌曲线程
         ScheduledExecutorService serviceLRC = Executors.newSingleThreadScheduledExecutor();//歌词和时间线程
+        playThread = Executors.newSingleThreadExecutor();//歌曲播放线程
         service.scheduleAtFixedRate(() -> {
             if (player != null && isComplete()) {
                 choose2Play();
             }
-        }, 1, 3, TimeUnit.SECONDS);
+        }, 1, 2, TimeUnit.SECONDS);
         serviceLRC.scheduleAtFixedRate(() -> {
-            if (player == null || lrcMap == null || lrcMap.isEmpty() || pause) {
+            if (player == null || lrcMap == null || pause) {
                 return;
             }
             if (!isComplete()) {
@@ -319,7 +307,7 @@ public class MusicPlayer implements ActionListener {
                 leftLabel.setText(Utils.secToTime(position));
                 slider.setValue(position);
             }
-        }, 1000, 50, TimeUnit.MILLISECONDS);
+        }, 1000, 50, TimeUnit.MILLISECONDS); //每50秒执行一次
     }
 
     private int getPosition() {
@@ -441,7 +429,7 @@ public class MusicPlayer implements ActionListener {
         }
     }
 
-    /**删除*/
+    /**从列表中移除歌曲*/
     private void deleteSong() {
         DefaultListModel<String> listModel = (DefaultListModel<String>) jList.getModel();
         int index = jList.getSelectedIndex();
@@ -484,6 +472,7 @@ public class MusicPlayer implements ActionListener {
         }
     }
 
+    /**随机播放*/
     private void randomPlay() {
         if (getSize() == 0) {
             return;
@@ -499,7 +488,7 @@ public class MusicPlayer implements ActionListener {
 
     /**停止*/
     private void stop() {
-        if (thread == null || player == null) {
+        if (playThread == null || player == null) {
             return;
         }
         player.close();
@@ -512,7 +501,7 @@ public class MusicPlayer implements ActionListener {
 
     /**暂停*/
     private void pause() {
-        if (thread == null) {
+        if (playThread == null) {
             return;
         }
         this.pause = true;
@@ -554,11 +543,11 @@ public class MusicPlayer implements ActionListener {
         }
     }
 
-    /**开启音乐线程*/
+    /**音乐播放线程*/
     private void play() {
         changeSong = true;
         pause = false;
-        thread = new Thread(() -> {
+        playThread.execute(() -> {
             try {
                 if (player != null) {
                     while (changeSong) {
@@ -571,9 +560,7 @@ public class MusicPlayer implements ActionListener {
             } catch (JavaLayerException e) {
                 e.printStackTrace();
             }
-            System.out.println(currentMusicName + "歌曲线程结束");
         });
-        thread.start();
     }
 
     private void choose2Play() {
