@@ -68,7 +68,7 @@ public final class Utils {
     }
 
     /**打开选择的面板*/
-    public static String open() {
+    public static String getMusicFilePath() {
         URL resource = MusicPlayer.class.getClassLoader().getResource("icon.jpg");
         assert resource != null;
         ImageIcon image = new ImageIcon(resource);
