@@ -552,12 +552,13 @@ public class MusicPlayer implements ActionListener {
                 if (player != null) {
                     while (changeSong) {
                         if (pause) {
+                            Thread.sleep(10);
                             continue;
                         }
                         player.play();
                     }
                 }
-            } catch (JavaLayerException e) {
+            } catch (JavaLayerException | InterruptedException e) {
                 e.printStackTrace();
             }
         });
