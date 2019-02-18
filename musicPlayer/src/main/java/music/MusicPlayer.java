@@ -64,11 +64,11 @@ public class MusicPlayer implements ActionListener {
 
     public static void main(String[] args) {
         MusicPlayer player = new MusicPlayer();
-/*        player.lrcFrame.setVisible(true);
+        player.lrcFrame.setVisible(true);
         for (int i = 0; i < 66; i++) {
             player.randomPlay();
         }
-        player.lrcFrame.setVisible(false);*/
+        player.lrcFrame.setVisible(false);
     }
 
     private void init() {
@@ -402,14 +402,14 @@ public class MusicPlayer implements ActionListener {
                 previous();
                 break;
             case "导入":
-                String musicFilePath = Utils.getMusicFilePath();
-                if (musicFilePath == null || saveList == null) {
+                String LOCATION = Utils.open();
+                if (LOCATION == null || saveList == null) {
                     return;
                 }
-                if (!saveList.contains(musicFilePath)) {
-                    saveList.add(musicFilePath);
+                if (!saveList.contains(LOCATION)) {
+                    saveList.add(LOCATION);
                 }
-                Utils.findAll(list, musicFilePath, songPathMap, lrcPathMap);
+                Utils.findAll(list, LOCATION, songPathMap, lrcPathMap);
                 saveSong();
                 break;
             case "删除":
@@ -487,7 +487,7 @@ public class MusicPlayer implements ActionListener {
     }
 
     /**停止*/
-    private synchronized void stop() {
+    private void stop() {
         if (playThread == null || player == null) {
             return;
         }
@@ -544,7 +544,7 @@ public class MusicPlayer implements ActionListener {
     }
 
     /**音乐播放线程*/
-    private synchronized void play() {
+    private void play() {
         changeSong = true;
         pause = false;
         playThread.execute(() -> {
@@ -552,7 +552,7 @@ public class MusicPlayer implements ActionListener {
                 if (player != null) {
                     while (changeSong) {
                         if (pause) {
-                            Thread.sleep(100);
+                            Thread.sleep(10);
                             continue;
                         }
                         player.play();
