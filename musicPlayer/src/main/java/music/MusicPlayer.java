@@ -43,8 +43,8 @@ public class MusicPlayer implements ActionListener {
     private DefaultListModel<String> list;
     private JList<String> jList;
     private String currentMusicName;
-    private Player player; //播放器
-    private int index;//当前播放的音乐索引
+    private volatile Player player; //播放器
+    private volatile int index;//当前播放的音乐索引
     private Map<String, String> songPathMap; //歌曲名称和路径的键值对
     private Map<String, String> lrcPathMap; //歌曲名称和路径的键值对
     private java.util.List<String> saveList; //路径保存的列表
@@ -53,28 +53,78 @@ public class MusicPlayer implements ActionListener {
     private JFrame lrcFrame;
     private Point lrcXY;
     private JLabel lrcLabel;
-    private volatile boolean changeSong; //是否换歌
+    private volatile boolean playState; //为true则播放，false为结束
     private volatile boolean pause; //暂停歌曲
-    private ExecutorService playThread;
-
-    private MusicPlayer() {
-        init();//初始化
-        listener();//监听
-    }
+    private ExecutorService playThread;//播放线程
 
     public static void main(String[] args) {
         MusicPlayer player = new MusicPlayer();
-        player.lrcFrame.setVisible(true);
-        for (int i = 0; i < 66; i++) {
+        player.start();
+        for (int i = 0; i < 100; i++) {
             player.randomPlay();
         }
-        player.lrcFrame.setVisible(false);
+    }
+
+    private void start() {
+        init();//初始化
+        listener();//监听
     }
 
     private void init() {
         loadSong(); //加载歌曲列表
         playInit(); //播放线程初始化
         mainFrame();//主界面加载
+    }
+
+    /**加载歌曲*/
+    private void loadSong() {
+        list = new DefaultListModel<>();
+        jList = new JList<>(list);
+        songPathMap = new HashMap<>(); //歌曲名称和路径的键值对
+        lrcPathMap = new HashMap<>(); //歌曲名称和路径的键值对
+        if (getSize() == 0) {  //加载文件
+            saveList = Utils.load();
+            if (saveList != null) {
+                for (String savePath : saveList) {
+                    Utils.findAll(list, savePath, songPathMap, lrcPathMap);
+                }
+            }
+        }
+    }
+
+    /**播放初始化*/
+    private void playInit() {
+        index = -1; //当前播放索引初始化为-1
+        playState = true;//歌曲播放状态
+        needTurn = true;//列表显示标记
+        ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(); //监听歌曲线程
+        ScheduledExecutorService serviceLRC = Executors.newSingleThreadScheduledExecutor();//歌词和时间线程
+        playThread = Executors.newSingleThreadExecutor();//歌曲播放线程
+        service.scheduleAtFixedRate(() -> {
+            if (player != null && isComplete()) {
+                choose2Play();
+            }
+        }, 1, 2, TimeUnit.SECONDS);
+        serviceLRC.scheduleAtFixedRate(() -> {
+            if (player == null || lrcMap == null || pause) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                return;
+            }
+            if (!isComplete()) {
+                int second = getPosition() / 1000; //获得当前的时间
+                String index = lrcMap.get(second);
+                if (index != null) {
+                    lrcLabel.setText(index);
+                }
+                int position = getPosition() / 1000;
+                leftLabel.setText(Utils.secToTime(position));
+                slider.setValue(position);
+            }
+        }, 1000, 50, TimeUnit.MILLISECONDS); //每50秒执行一次
     }
 
     /**
@@ -263,52 +313,6 @@ public class MusicPlayer implements ActionListener {
         modeBox.setOpaque(false);
     }
 
-    /**加载歌曲*/
-    private void loadSong() {
-        list = new DefaultListModel<>();
-        jList = new JList<>(list);
-        songPathMap = new HashMap<>(); //歌曲名称和路径的键值对
-        lrcPathMap = new HashMap<>(); //歌曲名称和路径的键值对
-        if (getSize() == 0) {  //加载文件
-            saveList = Utils.load();
-            if (saveList != null) {
-                for (String savePath : saveList) {
-                    new Thread(() -> Utils.findAll(list, savePath, songPathMap, lrcPathMap))
-                            .start();
-                }
-            }
-        }
-    }
-
-    /**播放初始化*/
-    private void playInit() {
-        index = -1; //当前播放索引初始化为-1
-        changeSong = true;//歌曲播放状态
-        needTurn = true;//列表显示标记
-        ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor(); //监听歌曲线程
-        ScheduledExecutorService serviceLRC = Executors.newSingleThreadScheduledExecutor();//歌词和时间线程
-        playThread = Executors.newSingleThreadExecutor();//歌曲播放线程
-        service.scheduleAtFixedRate(() -> {
-            if (player != null && isComplete()) {
-                choose2Play();
-            }
-        }, 1, 2, TimeUnit.SECONDS);
-        serviceLRC.scheduleAtFixedRate(() -> {
-            if (player == null || lrcMap == null || pause) {
-                return;
-            }
-            if (!isComplete()) {
-                int second = getPosition() / 1000; //获得当前的时间
-                String index = lrcMap.get(second);
-                if (index != null) {
-                    lrcLabel.setText(index);
-                }
-                int position = getPosition() / 1000;
-                leftLabel.setText(Utils.secToTime(position));
-                slider.setValue(position);
-            }
-        }, 1000, 50, TimeUnit.MILLISECONDS); //每50秒执行一次
-    }
 
     private int getPosition() {
         return player.getPosition();
@@ -374,7 +378,7 @@ public class MusicPlayer implements ActionListener {
                     playFile(getName());
 
                 } else {
-                    if (!changeSong) {
+                    if (!playState) {
                         index = jList.getSelectedIndex();
                         if (index == -1) {
                             return;
@@ -492,11 +496,11 @@ public class MusicPlayer implements ActionListener {
             return;
         }
         player.close();
-        this.changeSong = false;
+        this.playState = false;
         play.setText("播放");
         leftLabel.setText(Utils.secToTime(0));
         rightLabel.setText(Utils.secToTime(0));
-        song.setText("");
+        song.setText("歌曲");
     }
 
     /**暂停*/
@@ -526,11 +530,9 @@ public class MusicPlayer implements ActionListener {
         }
         currentMusicName = musicName;
         try {
-            synchronized ("LOCK") {
-                stop();
-                AudioDevice device = new JavaSoundAudioDevice();
-                player = new Player(new FileInputStream(songPathMap.get(musicName)), device);
-            }
+            stop();
+            AudioDevice device = new JavaSoundAudioDevice();
+            player = new Player(new FileInputStream(songPathMap.get(musicName)), device);
             int totalTime = Utils.getMp3Time(songPathMap.get(musicName));
             slider.setMinimum(0);
             slider.setMaximum(totalTime);
@@ -545,14 +547,14 @@ public class MusicPlayer implements ActionListener {
 
     /**音乐播放线程*/
     private void play() {
-        changeSong = true;
+        playState = true;
         pause = false;
         playThread.execute(() -> {
             try {
                 if (player != null) {
-                    while (changeSong) {
+                    while (playState) {
                         if (pause) {
-                            Thread.sleep(10);
+                            Thread.sleep(100); //解决CUP占用过高
                             continue;
                         }
                         player.play();
@@ -594,7 +596,6 @@ public class MusicPlayer implements ActionListener {
 
     /**上一曲*/
     private void previous() {
-        this.changeSong = false;
         if (index > 0) {
             index -= 1;
         } else {
