@@ -60,9 +60,6 @@ public class MusicPlayer implements ActionListener {
     public static void main(String[] args) {
         MusicPlayer player = new MusicPlayer();
         player.start();
-        for (int i = 0; i < 100; i++) {
-            player.randomPlay();
-        }
     }
 
     private void start() {
