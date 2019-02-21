@@ -1,8 +1,6 @@
 package main.java.music;
 
 import javazoom.jl.decoder.JavaLayerException;
-import javazoom.jl.player.AudioDevice;
-import javazoom.jl.player.JavaSoundAudioDevice;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -57,9 +55,13 @@ public class MusicPlayer implements ActionListener {
     private volatile boolean pause; //暂停歌曲
     private ExecutorService playThread;//播放线程
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         MusicPlayer player = new MusicPlayer();
         player.start();
+        Thread.sleep(10000);
+        for (int i = 0; i < 100; i++) {
+            player.choose2Play();
+        }
     }
 
     private void start() {
@@ -73,7 +75,9 @@ public class MusicPlayer implements ActionListener {
         mainFrame();//主界面加载
     }
 
-    /**加载歌曲*/
+    /**
+     * 加载歌曲
+     */
     private void loadSong() {
         list = new DefaultListModel<>();
         jList = new JList<>(list);
@@ -89,7 +93,9 @@ public class MusicPlayer implements ActionListener {
         }
     }
 
-    /**播放初始化*/
+    /**
+     * 播放初始化
+     */
     private void playInit() {
         index = -1; //当前播放索引初始化为-1
         playState = true;//歌曲播放状态
@@ -142,7 +148,9 @@ public class MusicPlayer implements ActionListener {
         frame.setVisible(true);
     }
 
-    /**歌词面板*/
+    /**
+     * 歌词面板
+     */
     private JFrame createLrcFrame() {
         URL resource = MusicPlayer.class.getClassLoader().getResource("icon.jpg");
         assert resource != null;
@@ -237,7 +245,9 @@ public class MusicPlayer implements ActionListener {
         return lrcPanel;
     }
 
-    /**按钮样式*/
+    /**
+     * 按钮样式
+     */
     private void setButton(JButton button) {
         String pic = "default.png";
         String press = "press.png";
@@ -266,7 +276,9 @@ public class MusicPlayer implements ActionListener {
         button.setRolloverIcon(rollPicImage);
     }
 
-    /**按钮面板*/
+    /**
+     * 按钮面板
+     */
     private JPanel controlPanel() {
         buttonBoxInit();
         JPanel controlPanel = new JPanel();
@@ -285,7 +297,9 @@ public class MusicPlayer implements ActionListener {
         return controlPanel;
     }
 
-    /**按钮面板*/
+    /**
+     * 按钮面板
+     */
     private void buttonBoxInit() {
         input = new JButton("导入");
         play = new JButton("播放");
@@ -430,7 +444,9 @@ public class MusicPlayer implements ActionListener {
         }
     }
 
-    /**从列表中移除歌曲*/
+    /**
+     * 从列表中移除歌曲
+     */
     private void deleteSong() {
         DefaultListModel<String> listModel = (DefaultListModel<String>) jList.getModel();
         int index = jList.getSelectedIndex();
@@ -451,7 +467,9 @@ public class MusicPlayer implements ActionListener {
         lrcPathMap.remove(name);//歌词
     }
 
-    /**删除歌曲和歌词文件*/
+    /**
+     * 删除歌曲和歌词文件
+     */
     private void deleteFile() {
         DefaultListModel<String> listModel = (DefaultListModel<String>) jList.getModel();
         int index = jList.getSelectedIndex();
@@ -473,7 +491,9 @@ public class MusicPlayer implements ActionListener {
         }
     }
 
-    /**随机播放*/
+    /**
+     * 随机播放
+     */
     private void randomPlay() {
         if (getSize() == 0) {
             return;
@@ -487,7 +507,9 @@ public class MusicPlayer implements ActionListener {
         song.setText(getName());
     }
 
-    /**停止*/
+    /**
+     * 停止
+     */
     private void stop() {
         if (playThread == null || player == null) {
             return;
@@ -500,7 +522,9 @@ public class MusicPlayer implements ActionListener {
         song.setText("歌曲");
     }
 
-    /**暂停*/
+    /**
+     * 暂停
+     */
     private void pause() {
         if (playThread == null) {
             return;
@@ -509,7 +533,9 @@ public class MusicPlayer implements ActionListener {
         play.setText("播放");
     }
 
-    /**播放音乐*/
+    /**
+     * 播放音乐
+     */
     private void playFile(String musicName) {
 
         if (lrcMap != null) {
@@ -527,9 +553,7 @@ public class MusicPlayer implements ActionListener {
         }
         currentMusicName = musicName;
         try {
-            stop();
-            AudioDevice device = new JavaSoundAudioDevice();
-            player = new Player(new FileInputStream(songPathMap.get(musicName)), device);
+            player = new Player(new FileInputStream(songPathMap.get(musicName)));
             int totalTime = Utils.getMp3Time(songPathMap.get(musicName));
             slider.setMinimum(0);
             slider.setMaximum(totalTime);
@@ -542,7 +566,9 @@ public class MusicPlayer implements ActionListener {
         }
     }
 
-    /**音乐播放线程*/
+    /**
+     * 音乐播放线程
+     */
     private void play() {
         playState = true;
         pause = false;
@@ -559,6 +585,8 @@ public class MusicPlayer implements ActionListener {
                 }
             } catch (JavaLayerException | InterruptedException e) {
                 e.printStackTrace();
+            } finally {
+                stop();
             }
         });
     }
@@ -581,7 +609,9 @@ public class MusicPlayer implements ActionListener {
         return jList.getModel().getElementAt(index);
     }
 
-    /**下一曲*/
+    /**
+     * 下一曲
+     */
     private void next() {
         if (index < getSize() - 1) {
             index += 1;
@@ -591,7 +621,9 @@ public class MusicPlayer implements ActionListener {
         playFile(getName());
     }
 
-    /**上一曲*/
+    /**
+     * 上一曲
+     */
     private void previous() {
         if (index > 0) {
             index -= 1;
