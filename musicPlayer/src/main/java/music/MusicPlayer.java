@@ -55,13 +55,9 @@ public class MusicPlayer implements ActionListener {
     private volatile boolean pause; //暂停歌曲
     private ExecutorService playThread;//播放线程
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         MusicPlayer player = new MusicPlayer();
         player.start();
-        Thread.sleep(10000);
-        for (int i = 0; i < 100; i++) {
-            player.choose2Play();
-        }
     }
 
     private void start() {
@@ -110,11 +106,6 @@ public class MusicPlayer implements ActionListener {
         }, 1, 2, TimeUnit.SECONDS);
         serviceLRC.scheduleAtFixedRate(() -> {
             if (player == null || lrcMap == null || pause) {
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
                 return;
             }
             if (!isComplete()) {
@@ -127,7 +118,7 @@ public class MusicPlayer implements ActionListener {
                 leftLabel.setText(Utils.secToTime(position));
                 slider.setValue(position);
             }
-        }, 1000, 50, TimeUnit.MILLISECONDS); //每50秒执行一次
+        }, 1000, 100, TimeUnit.MILLISECONDS); //每50秒执行一次
     }
 
     /**
@@ -511,16 +502,16 @@ public class MusicPlayer implements ActionListener {
      * 停止
      */
     private void stop() {
-        if (playThread == null || player == null) {
-            return;
-        }
-        player.close();
         this.playState = false;
         play.setText("播放");
         leftLabel.setText(Utils.secToTime(0));
         rightLabel.setText(Utils.secToTime(0));
         song.setText("歌曲");
+        if (player != null) {
+            player.close();
+        }
     }
+
 
     /**
      * 暂停
@@ -537,30 +528,33 @@ public class MusicPlayer implements ActionListener {
      * 播放音乐
      */
     private void playFile(String musicName) {
-
-        if (lrcMap != null) {
-            lrcMap.clear();
-        }
-        lrcLabel.setText(musicName);
-        JScrollBar jscrollBar = scrollPaneList.getVerticalScrollBar();
-        if (jscrollBar != null && needTurn) {
-            jscrollBar.setValue((index - 3) * 21);
-        }
-        jList.setSelectedIndex(index);
-        String path = lrcPathMap.get(musicName);
-        if (path != null) {
-            lrcMap = Utils.readLRC(path);
-        }
-        currentMusicName = musicName;
         try {
-            player = new Player(new FileInputStream(songPathMap.get(musicName)));
+            playState = false;
+            lrcLabel.setText(musicName);
+            song.setText(musicName);
+            JScrollBar jscrollBar = scrollPaneList.getVerticalScrollBar();
+            if (jscrollBar != null && needTurn) {
+                jscrollBar.setValue((index - 3) * 21);
+            }
+            jList.setSelectedIndex(index);
+            if (lrcMap != null) {
+                lrcMap.clear();
+            }
+            String path = lrcPathMap.get(musicName);
+            if (path != null) {
+                lrcMap = Utils.readLRC(path);
+            }
             int totalTime = Utils.getMp3Time(songPathMap.get(musicName));
             slider.setMinimum(0);
             slider.setMaximum(totalTime);
             rightLabel.setText(Utils.secToTime(totalTime));
-            play();
             play.setText("暂停");
-            song.setText(musicName);
+            if (player != null) {
+                player.close();
+            }
+            player = new Player(new FileInputStream(songPathMap.get(musicName)));
+            play();
+            currentMusicName = musicName;
         } catch (JavaLayerException | FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -574,19 +568,16 @@ public class MusicPlayer implements ActionListener {
         pause = false;
         playThread.execute(() -> {
             try {
-                if (player != null) {
-                    while (playState) {
-                        if (pause) {
-                            Thread.sleep(100); //解决CUP占用过高
-                            continue;
-                        }
-                        player.play();
+                while (playState) {
+                    if (pause) {
+                        Thread.sleep(100); //解决CUP占用过高
+                        continue;
                     }
+                    player.play();
                 }
+                player.close();
             } catch (JavaLayerException | InterruptedException e) {
                 e.printStackTrace();
-            } finally {
-                stop();
             }
         });
     }
