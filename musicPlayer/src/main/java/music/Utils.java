@@ -69,10 +69,10 @@ public final class Utils {
 
     /**打开选择的面板*/
     public static String open() {
-        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.jpg");
+        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.png");
         assert resource != null;
         ImageIcon image = new ImageIcon(resource);
-        JFrame openFrame = new JFrame("歌词");
+        JFrame openFrame = new JFrame();
         openFrame.setIconImage(image.getImage());
         final JFileChooser fc = new JFileChooser();
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
