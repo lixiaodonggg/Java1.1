@@ -33,7 +33,7 @@ class MusicFrame implements ActionListener {
      * 主面板
      */
     public void mainFrame() {
-        frame = new JFrame("GFMusic");
+        frame = new JFrame("Music");
         URL resource = MusicPlayer.class.getClassLoader().getResource("icon.png");
         assert resource != null;
         ImageIcon image = new ImageIcon(resource);
@@ -51,14 +51,14 @@ class MusicFrame implements ActionListener {
      * 歌词面板
      */
     private JFrame createLrcFrame() {
-        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.jpg");
+        URL resource = MusicPlayer.class.getClassLoader().getResource("icon.png");
         assert resource != null;
         ImageIcon image = new ImageIcon(resource);
         JFrame lrcFrame = new JFrame("歌词");
         lrcFrame.setIconImage(image.getImage());
         lrcFrame.setBounds(400, 900, 1000, 60);
         lrcLabel = new JLabel("歌词", JLabel.CENTER);
-        lrcLabel.setForeground(new Color(21, 208, 244));
+        lrcLabel.setForeground(new Color(34,177,76));
         lrcLabel.setFont(new Font("微软雅黑", Font.PLAIN, 38));
         lrcFrame.add(lrcLabel);
         lrcFrame.setUndecorated(true);
@@ -113,7 +113,7 @@ class MusicFrame implements ActionListener {
         DefaultListCellRenderer renderer = new DefaultListCellRenderer();
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
         jList.setCellRenderer(renderer);
-        jList.setSelectionBackground(new Color(255, 128, 128));
+        jList.setSelectionBackground(new Color(34,177,76));
         jList.setFont(new Font("微软雅黑", Font.BOLD, 14));
         jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         jList.setValueIsAdjusting(true);
@@ -129,7 +129,7 @@ class MusicFrame implements ActionListener {
         song = new JLabel("歌曲");
         namePanel.add(song);
         song.setFont(new Font("微软雅黑", Font.PLAIN, 20));
-        song.setForeground(new Color(255, 128, 128));
+        song.setForeground(new Color(34,177,76));
         lrcPanel.setLayout(new BorderLayout());
         slider = new JSlider();
         leftLabel = new JLabel(Utils.secToTime(0));
@@ -228,9 +228,9 @@ class MusicFrame implements ActionListener {
     public void actionPerformed(ActionEvent e) {
 
     }
-
+//34，177，76
     class MySliderUI extends BasicSliderUI {
-        private final Color BACKGROUND01 = new Color(255, 76, 95);   //new Color(0,30,255);
+        private final Color BACKGROUND01 = new Color(7,177, 102);   //new Color(0,30,255);
         private final Color BACKGROUND02 = new Color(234, 236, 246);
 
         MySliderUI(JSlider arg0) {
