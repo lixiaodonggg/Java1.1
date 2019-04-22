@@ -232,7 +232,7 @@ public class MusicPlayer implements ActionListener {
         sliderPanel.add(slider, BorderLayout.CENTER);
         sliderPanel.add(rightLabel, BorderLayout.EAST);
         lrcPanel.add(namePanel, BorderLayout.NORTH);
-        lrcPanel.add(sliderPanel, BorderLayout.CENTER);
+        lrcPanel.add(sliderPanel, BorderLayout.SOUTH);
         return lrcPanel;
     }
 
@@ -527,7 +527,7 @@ public class MusicPlayer implements ActionListener {
     /**
      * 播放音乐
      */
-    private void playFile(String musicName) {
+    private  void playFile(String musicName) {
         try {
             playState = false;
             lrcLabel.setText(musicName);
