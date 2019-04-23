@@ -2,16 +2,11 @@ package main.java.music;
 
 import javazoom.jl.decoder.JavaLayerException;
 
-import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -25,7 +20,7 @@ public class MusicPlayer extends MusicFrame {
 
     private String currentMusicName; //当前播放的歌曲名
     private volatile Player player; //播放器
-    private volatile int index;//当前播放的音乐索引
+    private int index;//当前播放的音乐索引
     private Map<String, String> songPathMap; //歌曲名称和路径的键值对
     private Map<String, String> lrcPathMap; //歌曲名称和路径的键值对
     private java.util.List<String> saveList; //路径保存的列表
