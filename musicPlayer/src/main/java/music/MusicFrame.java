@@ -58,7 +58,7 @@ class MusicFrame implements ActionListener {
         lrcFrame.setIconImage(image.getImage());
         lrcFrame.setBounds(400, 900, 1000, 60);
         lrcLabel = new JLabel("歌词", JLabel.CENTER);
-        lrcLabel.setForeground(new Color(34,177,76));
+        lrcLabel.setForeground(new Color(255, 255, 0));
         lrcLabel.setFont(new Font("微软雅黑", Font.PLAIN, 38));
         lrcFrame.add(lrcLabel);
         lrcFrame.setUndecorated(true);
