@@ -93,6 +93,7 @@ public class MusicPlayer extends MusicFrame {
             }
         }, 1000, 100, TimeUnit.MILLISECONDS); //每50秒执行一次
     }
+
     private int getPosition() {
         return player.getPosition();
     }
@@ -164,7 +165,10 @@ public class MusicPlayer extends MusicFrame {
                         }
                         playFile(getName());
                     } else {
-                        this.pause = false;
+                        synchronized (this) {
+                            this.pause = false;
+                            notifyAll(); //继续
+                        }
                     }
                 }
                 play.setText("暂停");
@@ -293,7 +297,7 @@ public class MusicPlayer extends MusicFrame {
     /**
      * 暂停
      */
-    private void pause() {
+    private synchronized void pause() {
         if (playThread == null) {
             return;
         }
@@ -304,9 +308,13 @@ public class MusicPlayer extends MusicFrame {
     /**
      * 播放音乐
      */
-    private  void playFile(String musicName) {
+    private void playFile(String musicName) {
         try {
-            playState = false;
+            synchronized (this) {
+                stop();
+                pause = false;
+                notifyAll();
+            }
             lrcLabel.setText(musicName);
             song.setText(musicName);
             JScrollBar jscrollBar = scrollPaneList.getVerticalScrollBar();
@@ -326,9 +334,6 @@ public class MusicPlayer extends MusicFrame {
             slider.setMaximum(totalTime);
             rightLabel.setText(Utils.secToTime(totalTime));
             play.setText("暂停");
-            if (player != null) {
-                player.close();
-            }
             player = new Player(new FileInputStream(songPathMap.get(musicName)));
             play();
             currentMusicName = musicName;
@@ -342,17 +347,16 @@ public class MusicPlayer extends MusicFrame {
      */
     private void play() {
         playState = true;
-        pause = false;
         playThread.execute(() -> {
             try {
                 while (playState) {
                     if (pause) {
-                        Thread.sleep(100); //解决CUP占用过高
-                        continue;
+                        synchronized (this) {
+                            wait(); //暂停
+                        }
                     }
                     player.play();
                 }
-                player.close();
             } catch (JavaLayerException | InterruptedException e) {
                 e.printStackTrace();
             }
