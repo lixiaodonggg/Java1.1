@@ -3,11 +3,13 @@ package main.java.music;
 import javazoom.jl.decoder.JavaLayerException;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -16,7 +18,18 @@ import java.util.concurrent.TimeUnit;
 
 import javax.swing.*;
 
-public class MusicPlayer extends MusicFrame {
+public class MusicPlayer implements ActionListener {
+    public Map<String, String> getSongPathMap() {
+        return songPathMap;
+    }
+
+    public Map<String, String> getLrcPathMap() {
+        return lrcPathMap;
+    }
+
+    public List<String> getSaveList() {
+        return saveList;
+    }
 
     private String currentMusicName; //当前播放的歌曲名
     private volatile Player player; //播放器
@@ -25,25 +38,48 @@ public class MusicPlayer extends MusicFrame {
     private Map<String, String> lrcPathMap; //歌曲名称和路径的键值对
     private java.util.List<String> saveList; //路径保存的列表
     private Map<Integer, String> lrcMap;
+
+    public boolean getPlayState() {
+        return playState;
+    }
+
+
     private boolean needTurn;
     private volatile boolean playState; //为true则播放，false为结束
     private volatile boolean pause; //暂停歌曲
-    private ExecutorService playThread;//播放线程
 
-    public static void main(String[] args) {
-        MusicPlayer player = new MusicPlayer();
-        player.start();
+    public int getIndex() {  //当前播放的索引
+        return index;
     }
 
-    private void start() {
+    public void setPause(boolean pause) {
+        this.pause = pause;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
+    public void setNeedTurn(boolean needTurn) {
+        this.needTurn = needTurn;
+    }
+
+    private ExecutorService playThread;//播放线程
+    private MusicFrame frame;
+
+    public MusicPlayer() {
+        this.frame = new MusicFrame();
         init();//初始化
-        listener();//监听
+        listener();
+    }
+
+    public static void main(String[] args) {
+        new MusicPlayer();
     }
 
     private void init() {
         loadSong(); //加载歌曲列表
         playInit(); //播放线程初始化
-        mainFrame();//主界面加载
     }
 
     /**
@@ -56,7 +92,7 @@ public class MusicPlayer extends MusicFrame {
             saveList = Utils.load();
             if (saveList != null) {
                 for (String savePath : saveList) {
-                    Utils.findAll(list, savePath, songPathMap, lrcPathMap);
+                    Utils.findAll(frame.list, savePath, songPathMap, lrcPathMap);
                 }
             }
         }
@@ -85,11 +121,11 @@ public class MusicPlayer extends MusicFrame {
                 int second = getPosition() / 1000; //获得当前的时间
                 String index = lrcMap.get(second);
                 if (index != null) {
-                    lrcLabel.setText(index);
+                    frame.lrcLabel.setText(index);
                 }
                 int position = getPosition() / 1000;
-                leftLabel.setText(Utils.secToTime(position));
-                slider.setValue(position);
+                frame.leftLabel.setText(Utils.secToTime(position));
+                frame.slider.setValue(position);
             }
         }, 1000, 100, TimeUnit.MILLISECONDS); //每50秒执行一次
     }
@@ -102,138 +138,37 @@ public class MusicPlayer extends MusicFrame {
         return player.isComplete();
     }
 
-    private void listener() {
-        jList.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int selectedIndex = jList.getSelectedIndex();
-                    if (index == selectedIndex) {
-                        return;
-                    }
-                    needTurn = false;
-                    playFile(jList.getSelectedValue());
-                    needTurn = true;
-                    index = selectedIndex;
-                    jList.setSelectedIndex(index);
-                }
 
-            }
-        });
-        next.addActionListener(this);
-        input.addActionListener(this);
-        previous.addActionListener(this);
-        delete.addActionListener(this);
-        deleteFile.addActionListener(this);
-        play.addActionListener(this);
-        stop.addActionListener(this);
-        lrcButton.addActionListener(this);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    }
-
-    private void saveSong() {
+    public void saveSong() {
         //保存数据
-        if (jList.getVisibleRowCount() > 0) {
+        if (frame.jList.getVisibleRowCount() > 0) {
             Utils.save(saveList);
         }
     }
 
-    private int getSize() {
-        return jList.getModel().getSize();
+    public int getSize() {
+        return frame.jList.getModel().getSize();
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        String cmd = e.getActionCommand();
-        switch (cmd) {
-            case "停止":
-                stop();
-                return;
-            case "播放":
-                if (player == null) {
-                    index = jList.getSelectedIndex();
-                    if (index == -1) {
-                        return;
-                    }
-                    playFile(getName());
-
-                } else {
-                    if (!playState) {
-                        index = jList.getSelectedIndex();
-                        if (index == -1) {
-                            return;
-                        }
-                        playFile(getName());
-                    } else {
-                        synchronized (this) {
-                            this.pause = false;
-                            notifyAll(); //继续
-                        }
-                    }
-                }
-                play.setText("暂停");
-                break;
-            case "暂停":
-                pause();
-                break;
-            case "下一首":
-                if (getSize() == 0) {
-                    return;
-                }
-                choose2Play();
-                break;
-            case "上一首":
-                if (getSize() == 0) {
-                    return;
-                }
-                previous();
-                break;
-            case "导入":
-                String LOCATION = Utils.open();
-                if (LOCATION == null || saveList == null) {
-                    return;
-                }
-                if (!saveList.contains(LOCATION)) {
-                    saveList.add(LOCATION);
-                }
-                Utils.findAll(list, LOCATION, songPathMap, lrcPathMap);
-                saveSong();
-                break;
-            case "删除":
-                deleteSong();
-                break;
-            case "删除文件":
-                deleteFile();
-                break;
-            case "歌词:开":
-                lrcFrame.setVisible(true);
-                lrcButton.setText("歌词:关");
-                break;
-            case "歌词:关":
-                lrcFrame.setVisible(false);
-                lrcButton.setText("歌词:开");
-                break;
-        }
-    }
 
     /**
      * 从列表中移除歌曲
      */
-    private void deleteSong() {
-        DefaultListModel<String> listModel = (DefaultListModel<String>) jList.getModel();
-        int index = jList.getSelectedIndex();
+    public void deleteSong() {
+        DefaultListModel<String> listModel = (DefaultListModel<String>) frame.jList.getModel();
+        int index = frame.jList.getSelectedIndex();
         if (index == -1) {
             return;
         }
-        String name = listModel.get(jList.getSelectedIndex());
+        String name = listModel.get(frame.jList.getSelectedIndex());
         if (name == null) {
             return;
         }
         listModel.remove(index);
         if (index == listModel.size()) {
-            jList.setSelectedIndex(index - 1);
+            frame.jList.setSelectedIndex(index - 1);
         } else {
-            jList.setSelectedIndex(index);
+            frame.jList.setSelectedIndex(index);
         }
         songPathMap.remove(name);//歌曲
         lrcPathMap.remove(name);//歌词
@@ -242,9 +177,9 @@ public class MusicPlayer extends MusicFrame {
     /**
      * 删除歌曲和歌词文件
      */
-    private void deleteFile() {
-        DefaultListModel<String> listModel = (DefaultListModel<String>) jList.getModel();
-        int index = jList.getSelectedIndex();
+    public void deleteFile() {
+        DefaultListModel<String> listModel = (DefaultListModel<String>) frame.jList.getModel();
+        int index = frame.jList.getSelectedIndex();
         if (index == -1) {
             return;
         }
@@ -252,7 +187,7 @@ public class MusicPlayer extends MusicFrame {
         if (name == null || name.equals(getName())) {
             return;
         }
-        listModel.remove(jList.getSelectedIndex());
+        listModel.remove(frame.jList.getSelectedIndex());
         String delete = songPathMap.remove(name);//歌曲
         if (delete != null) {
             Utils.deleteSong(delete);
@@ -276,18 +211,18 @@ public class MusicPlayer extends MusicFrame {
         }
         this.index = index;
         playFile(getName());
-        song.setText(getName());
+        frame.song.setText(getName());
     }
 
     /**
      * 停止
      */
-    private void stop() {
+    public void stop() {
         this.playState = false;
-        play.setText("播放");
-        leftLabel.setText(Utils.secToTime(0));
-        rightLabel.setText(Utils.secToTime(0));
-        song.setText("歌曲");
+        frame.play.setText("播放");
+        frame.leftLabel.setText(Utils.secToTime(0));
+        frame.rightLabel.setText(Utils.secToTime(0));
+        frame.song.setText("歌曲");
         if (player != null) {
             player.close();
         }
@@ -297,31 +232,31 @@ public class MusicPlayer extends MusicFrame {
     /**
      * 暂停
      */
-    private synchronized void pause() {
+    public synchronized void pause() {
         if (playThread == null) {
             return;
         }
         this.pause = true;
-        play.setText("播放");
+        frame.play.setText("播放");
     }
 
     /**
      * 播放音乐
      */
-    private void playFile(String musicName) {
+    public void playFile(String musicName) {
         try {
             synchronized (this) {
                 stop();
                 pause = false;
                 notifyAll();
             }
-            lrcLabel.setText(musicName);
-            song.setText(musicName);
-            JScrollBar jscrollBar = scrollPaneList.getVerticalScrollBar();
+            frame.lrcLabel.setText(musicName);
+            frame.song.setText(musicName);
+            JScrollBar jscrollBar = frame.scrollPaneList.getVerticalScrollBar();
             if (jscrollBar != null && needTurn) {
                 jscrollBar.setValue((index - 3) * 21);
             }
-            jList.setSelectedIndex(index);
+            frame.jList.setSelectedIndex(index);
             if (lrcMap != null) {
                 lrcMap.clear();
             }
@@ -330,10 +265,10 @@ public class MusicPlayer extends MusicFrame {
                 lrcMap = Utils.readLRC(path);
             }
             int totalTime = Utils.getMp3Time(songPathMap.get(musicName));
-            slider.setMinimum(0);
-            slider.setMaximum(totalTime);
-            rightLabel.setText(Utils.secToTime(totalTime));
-            play.setText("暂停");
+            frame.slider.setMinimum(0);
+            frame.slider.setMaximum(totalTime);
+            frame.rightLabel.setText(Utils.secToTime(totalTime));
+            frame.play.setText("暂停");
             player = new Player(new FileInputStream(songPathMap.get(musicName)));
             play();
             currentMusicName = musicName;
@@ -363,8 +298,8 @@ public class MusicPlayer extends MusicFrame {
         });
     }
 
-    private void choose2Play() {
-        switch (modeBox.getModel().getSelectedItem().toString()) {
+    public void choose2Play() {
+        switch (frame.modeBox.getModel().getSelectedItem().toString()) {
             case "顺序播放":
                 next();
                 break;
@@ -377,8 +312,8 @@ public class MusicPlayer extends MusicFrame {
         }
     }
 
-    private String getName() {
-        return jList.getModel().getElementAt(index);
+    public String getName() {
+        return frame.jList.getModel().getElementAt(index);
     }
 
     /**
@@ -396,12 +331,120 @@ public class MusicPlayer extends MusicFrame {
     /**
      * 上一曲
      */
-    private void previous() {
+    public void previous() {
         if (index > 0) {
             index -= 1;
         } else {
             index = getSize() - 1;
         }
         playFile(getName());
+    }
+
+    public Player getPlayer() {
+        return player;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        String cmd = e.getActionCommand();
+        switch (cmd) {
+            case "停止":
+                stop();
+                return;
+            case "播放":
+                if (getPlayer() == null) {
+                    setIndex(frame.jList.getSelectedIndex());
+                    if (getIndex() == -1) {
+                        return;
+                    }
+                    playFile(getName());
+
+                } else {
+                    if (!getPlayState()) {
+                        setIndex(frame.jList.getSelectedIndex());
+                        if (getIndex() == -1) {
+                            return;
+                        }
+                        playFile(getName());
+                    } else {
+                        synchronized (this) {
+                            setPause(false);
+                            notifyAll(); //继续
+                        }
+                    }
+                }
+                frame.play.setText("暂停");
+                break;
+            case "暂停":
+                pause();
+                break;
+            case "下一首":
+                if (getSize() == 0) {
+                    return;
+                }
+                choose2Play();
+                break;
+            case "上一首":
+                if (getSize() == 0) {
+                    return;
+                }
+                previous();
+                break;
+            case "导入":
+                String LOCATION = Utils.open();
+                if (LOCATION == null || getSaveList() == null) {
+                    return;
+                }
+                if (!getSaveList().contains(LOCATION)) {
+                    getSaveList().add(LOCATION);
+                }
+                Utils.findAll(frame.list, LOCATION, getSongPathMap(), getLrcPathMap());
+                saveSong();
+                break;
+            case "删除":
+                deleteSong();
+                break;
+            case "删除文件":
+                deleteFile();
+                break;
+            case "歌词:开":
+                frame.lrcFrame.setVisible(true);
+                frame.lrcButton.setText("歌词:关");
+                break;
+            case "歌词:关":
+                frame.lrcFrame.setVisible(false);
+                frame.lrcButton.setText("歌词:开");
+                break;
+        }
+    }
+
+
+    private void listener() {
+        frame.jList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int selectedIndex = frame.jList.getSelectedIndex();
+                    if (getIndex() == selectedIndex) {
+                        return;
+                    }
+                    setNeedTurn(false);
+                    playFile(frame.jList.getSelectedValue());
+                    setNeedTurn(true);
+                    setIndex(selectedIndex);
+                    frame.jList.setSelectedIndex(getIndex());
+                }
+
+            }
+        });
+        frame.next.addActionListener(this);
+        frame.input.addActionListener(this);
+        frame.previous.addActionListener(this);
+        frame.delete.addActionListener(this);
+        frame.deleteFile.addActionListener(this);
+        frame.play.addActionListener(this);
+        frame.stop.addActionListener(this);
+        frame.lrcButton.addActionListener(this);
+        frame.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 }

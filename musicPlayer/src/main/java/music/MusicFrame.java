@@ -6,7 +6,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.net.URL;
 
-class MusicFrame implements ActionListener {
+class MusicFrame {
 
     JFrame frame;
     JButton input;
@@ -28,6 +28,9 @@ class MusicFrame implements ActionListener {
     JFrame lrcFrame;
     private Point lrcXY;
     JLabel lrcLabel;
+    public MusicFrame() {
+        mainFrame();
+    }
 
     /**
      * 主面板
@@ -113,7 +116,7 @@ class MusicFrame implements ActionListener {
         DefaultListCellRenderer renderer = new DefaultListCellRenderer();
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
         jList.setCellRenderer(renderer);
-        jList.setSelectionBackground(new Color(34,177,76));
+        jList.setSelectionBackground(new Color(34, 177, 76));
         jList.setFont(new Font("微软雅黑", Font.BOLD, 14));
         jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         jList.setValueIsAdjusting(true);
@@ -129,7 +132,7 @@ class MusicFrame implements ActionListener {
         song = new JLabel("歌曲");
         namePanel.add(song);
         song.setFont(new Font("微软雅黑", Font.PLAIN, 20));
-        song.setForeground(new Color(34,177,76));
+        song.setForeground(new Color(34, 177, 76));
         lrcPanel.setLayout(new BorderLayout());
         slider = new JSlider();
         leftLabel = new JLabel(Utils.secToTime(0));
@@ -224,13 +227,9 @@ class MusicFrame implements ActionListener {
         modeBox.setOpaque(false);
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-
-    }
-//34，177，76
+    //34，177，76
     class MySliderUI extends BasicSliderUI {
-        private final Color BACKGROUND01 = new Color(7,177, 102);   //new Color(0,30,255);
+        private final Color BACKGROUND01 = new Color(7, 177, 102);   //new Color(0,30,255);
         private final Color BACKGROUND02 = new Color(234, 236, 246);
 
         MySliderUI(JSlider arg0) {
@@ -263,5 +262,11 @@ class MusicFrame implements ActionListener {
             g2d.setStroke(new BasicStroke(4, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g2d.drawLine(8, trackRect.height / 2 + 1, trackRect.width + 8, trackRect.height / 2 + 1);
         }
+    }
+
+
+
+    public static void main(String[] args) {
+        new MusicFrame();
     }
 }
