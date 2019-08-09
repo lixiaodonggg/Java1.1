@@ -80,6 +80,7 @@ public class MusicPlayer implements ActionListener {
     private void init() {
         loadSong(); //加载歌曲列表
         playInit(); //播放线程初始化
+        frame.mainFrame(); //先加载歌曲，后显示界面
     }
 
     /**

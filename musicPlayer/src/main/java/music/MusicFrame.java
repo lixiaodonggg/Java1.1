@@ -28,10 +28,6 @@ class MusicFrame {
     JFrame lrcFrame;
     private Point lrcXY;
     JLabel lrcLabel;
-    public MusicFrame() {
-        mainFrame();
-    }
-
     /**
      * 主面板
      */
