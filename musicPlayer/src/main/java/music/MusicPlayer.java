@@ -93,7 +93,10 @@ public class MusicPlayer implements ActionListener {
             saveList = Utils.load();
             if (saveList != null) {
                 for (String savePath : saveList) {
-                    Utils.findAll(frame.list, savePath, songPathMap, lrcPathMap);
+                    Utils.findAll(savePath, songPathMap, lrcPathMap);
+                }
+                for (String name : songPathMap.keySet()) {
+                    frame.list.addElement(name);
                 }
             }
         }
@@ -115,7 +118,7 @@ public class MusicPlayer implements ActionListener {
             }
         }, 1, 2, TimeUnit.SECONDS);
         serviceLRC.scheduleAtFixedRate(() -> {
-            if (player == null || lrcMap == null || pause) {
+            if (player == null || pause || lrcMap == null) {
                 return;
             }
             if (!isComplete()) {
@@ -128,7 +131,7 @@ public class MusicPlayer implements ActionListener {
                 frame.leftLabel.setText(Utils.secToTime(position));
                 frame.slider.setValue(position);
             }
-        }, 1000, 100, TimeUnit.MILLISECONDS); //每50秒执行一次
+        }, 1000, 50, TimeUnit.MILLISECONDS); //每50秒执行一次
     }
 
     private int getPosition() {
@@ -264,6 +267,8 @@ public class MusicPlayer implements ActionListener {
             String path = lrcPathMap.get(musicName);
             if (path != null) {
                 lrcMap = Utils.readLRC(path);
+            } else {
+                lrcMap = new HashMap<>();
             }
             int totalTime = Utils.getMp3Time(songPathMap.get(musicName));
             frame.slider.setMinimum(0);
@@ -399,7 +404,10 @@ public class MusicPlayer implements ActionListener {
                 if (!getSaveList().contains(LOCATION)) {
                     getSaveList().add(LOCATION);
                 }
-                Utils.findAll(frame.list, LOCATION, getSongPathMap(), getLrcPathMap());
+                Utils.findAll(LOCATION, getSongPathMap(), getLrcPathMap());
+                for (String name : songPathMap.keySet()) {
+                    frame.list.addElement(name);
+                }
                 saveSong();
                 break;
             case "删除":

@@ -23,24 +23,22 @@ import javax.swing.*;
 //mp3,wma,ape,wav,midi
 public final class Utils {
 
-    /**将歌曲路径加载到歌曲列表中*/
-    protected static void findAll(DefaultListModel<String> list, String path,
-            Map<String, String> songMap, Map<String, String> lrcMap) {
+    /**
+     * 将歌曲路径加载到歌曲列表中
+     */
+    protected static void findAll(String path,
+                                  Map<String, String> songMap, Map<String, String> lrcMap) {
         File dir = new File(path);
         File[] files = dir.listFiles();
         if (files != null) {
             for (File file : files) {
                 if (file.isDirectory()) {
-                    findAll(list, file.getAbsolutePath(), songMap, lrcMap);
+                    findAll(file.getAbsolutePath(), songMap, lrcMap);
                 } else {
                     String name = file.getName();
                     if (name.endsWith(".mp3") || name.endsWith(".wma") || name.endsWith(".ape") ||
                             name.endsWith(".wav") || name.endsWith(".midi")) {
-                        String success =
-                                songMap.put(shortCut(file.getName()), file.getAbsolutePath());
-                        if (success == null) {
-                            list.addElement(shortCut(file.getName()));
-                        }
+                        songMap.put(shortCut(file.getName()), file.getAbsolutePath());
                     }
                     if (name.endsWith(".lrc")) {
                         lrcMap.put(shortCut(file.getName()), file.getAbsolutePath());
@@ -50,7 +48,9 @@ public final class Utils {
         }
     }
 
-    /**对歌曲名称的缩短*/
+    /**
+     * 对歌曲名称的缩短
+     */
     private static String shortCut(String string) {
         String[] str = string.split("-");
         String musicName = "";
@@ -67,7 +67,9 @@ public final class Utils {
         return musicName;
     }
 
-    /**打开选择的面板*/
+    /**
+     * 打开选择的面板
+     */
     public static String open() {
         URL resource = MusicPlayer.class.getClassLoader().getResource("icon.png");
         assert resource != null;
@@ -84,13 +86,17 @@ public final class Utils {
         return path.getAbsolutePath();
     }
 
-    /**保存歌曲文件夹的路径*/
+    /**
+     * 保存歌曲文件夹的路径
+     */
     protected static void save(List<String> list) {
         File file = new File("musicPath.txt");
         writeList(list, file);
     }
 
-    /**将歌曲文件夹路径写入*/
+    /**
+     * 将歌曲文件夹路径写入
+     */
     private static void writeList(List<String> list, File file) {
         try (PrintWriter out = new PrintWriter(file, "utf-8")) {
             for (String str : list) {
@@ -101,7 +107,9 @@ public final class Utils {
         }
     }
 
-    /**加载路径列表*/
+    /**
+     * 加载路径列表
+     */
     protected static java.util.List<String> load() {
 
         File file = new File("musicPath.txt");
@@ -116,7 +124,9 @@ public final class Utils {
         return readList(file);
     }
 
-    /**读取列表*/
+    /**
+     * 读取列表
+     */
     private static java.util.List<String> readList(File file) {
         BufferedReader ios = null;
         java.util.List<String> list = new ArrayList<>();
@@ -139,7 +149,9 @@ public final class Utils {
         return list;
     }
 
-    /**获得歌曲的信息*/
+    /**
+     * 获得歌曲的信息
+     */
     public static int getMp3Time(String mp3File) {
         try {
             MP3File f = (MP3File) AudioFileIO.read(new File(mp3File));
@@ -150,7 +162,9 @@ public final class Utils {
         }
     }
 
-    /**改变时间的格式*/
+    /**
+     * 改变时间的格式
+     */
     public static String secToTime(int time) {
         String timeStr;
         int hour;
@@ -186,7 +200,9 @@ public final class Utils {
         return retStr;
     }
 
-    /**对时间字符串的解析*/
+    /**
+     * 对时间字符串的解析
+     */
     public static int parseTime(String time) {
         String[] times = time.split(":");
         assert times.length <= 3;
@@ -200,7 +216,9 @@ public final class Utils {
         return t;
     }
 
-    /**读取歌词文件的方法*/
+    /**
+     * 读取歌词文件的方法
+     */
     public static Map<Integer, String> readLRC(String path) {
         BufferedReader reader = null;
         Map<Integer, String> map = null;
@@ -259,7 +277,9 @@ public final class Utils {
         return map;
     }
 
-    /**删除文件*/
+    /**
+     * 删除文件
+     */
     public static boolean deleteSong(String name) {
         File file = new File(name);
         return file.delete();
